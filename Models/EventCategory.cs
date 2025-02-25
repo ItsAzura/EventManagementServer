@@ -15,6 +15,6 @@ namespace EventManagementServer.Models
         public int CategoryID { get; set; }
 
         [ForeignKey("CategoryID")]
-        public required Category Category { get; set; }
+        public Category? Category { get; set; }
     }
 }

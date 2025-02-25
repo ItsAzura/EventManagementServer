@@ -22,6 +22,20 @@ namespace EventManagementServer.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            //seed data
+
+            modelBuilder.Entity<Role>().HasData( 
+                new Role { RoleID = 1, RoleName = "Admin", RoleDescription = "Admin Role" },
+                new Role { RoleID = 2, RoleName = "User", RoleDescription = "User Role" }
+            );
+
+            modelBuilder.Entity<Category>().HasData(
+                new Category { CategoryID = 1, CategoryName = "Music", CategoryDescription = "Music Event" },
+                new Category { CategoryID = 2, CategoryName = "Sport", CategoryDescription = "Sport Event" },
+                new Category { CategoryID = 3, CategoryName = "Education", CategoryDescription = "Education Event" },
+                new Category { CategoryID = 4, CategoryName = "Business", CategoryDescription = "Business Event" },
+                new Category { CategoryID = 5, CategoryName = "Health", CategoryDescription = "Health Event" }  
+            );
 
         }
 

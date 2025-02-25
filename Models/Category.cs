@@ -14,6 +14,6 @@ namespace EventManagementServer.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-        public required ICollection<EventCategory> EventCategories { get; set; }
+        public  ICollection<EventCategory>? EventCategories { get; set; }
     }
 }

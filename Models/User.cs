@@ -23,10 +23,10 @@ namespace EventManagementServer.Models
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         [ForeignKey("RoleID")]
-        public required Role Role { get; set; }
+        public  Role? Role { get; set; }
 
-        public required ICollection<Registration> Registrations { get; set; }
-        public required ICollection<Comment> Comments { get; set; }
-        public required ICollection<Notification> Notifications { get; set; }
+        public  ICollection<Registration>? Registrations { get; set; }
+        public  ICollection<Comment>? Comments { get; set; }
+        public  ICollection<Notification>? Notifications { get; set; }
     }
 }
