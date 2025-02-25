@@ -29,11 +29,11 @@ namespace EventManagementServer.Models
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey("CreatedBy")]
-        public required User Creator { get; set; }
+        public  User? Creator { get; set; }
 
-        public required ICollection<EventCategory> EventCategories { get; set; }
-        public required ICollection<Registration> Registrations { get; set; }
-        public required ICollection<EventArea> EventAreas { get; set; }
-        public required ICollection<Comment> Comments { get; set; }
+        public  ICollection<EventCategory>? EventCategories { get; set; }
+        public  ICollection<Registration>? Registrations { get; set; }
+        public  ICollection<EventArea>? EventAreas { get; set; }
+        public  ICollection<Comment>? Comments { get; set; }
     }
 }
