@@ -26,7 +26,7 @@ namespace EventManagementServer.Models
         [Required]
         public int CreatedBy { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; }
 
         [ForeignKey("CreatedBy")]
         public required User Creator { get; set; }

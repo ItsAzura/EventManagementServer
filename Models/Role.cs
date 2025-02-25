@@ -7,13 +7,13 @@ namespace EventManagementServer.Models
         [Key]
         public int RoleID { get; set; }
 
-        [Required, MaxLength(50)]
+        [MaxLength(50)]
         public string RoleName { get; set; } = String.Empty;
 
-        [Required, MaxLength(150)]
+        [MaxLength(150)]
         public string RoleDescription { get; set; } = String.Empty;
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; }
 
         public ICollection<User>? Users { get; set; }
     }

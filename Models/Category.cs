@@ -12,7 +12,7 @@ namespace EventManagementServer.Models
 
         public string CategoryDescription { get; set; } = String.Empty;
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; }
 
         public  ICollection<EventCategory>? EventCategories { get; set; }
     }

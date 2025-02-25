@@ -22,7 +22,26 @@ namespace EventManagementServer.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            //seed data
+            modelBuilder.Entity<Role>()
+                .Property(r => r.CreatedAt)
+                .HasDefaultValueSql("NOW()");
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.CreatedAt)
+                .HasDefaultValueSql("NOW()");
+
+            modelBuilder.Entity<Category>()
+                .Property(c => c.CreatedAt)
+                .HasDefaultValueSql("NOW()");
+
+            modelBuilder.Entity<Notification>()
+                .Property(n => n.CreatedAt)
+                .HasDefaultValueSql("NOW()");
+
+            modelBuilder.Entity<Event>()
+                .Property(e => e.CreatedAt)
+                .HasDefaultValueSql("NOW()");
+
 
             modelBuilder.Entity<Role>().HasData( 
                 new Role { RoleID = 1, RoleName = "Admin", RoleDescription = "Admin Role" },
@@ -34,7 +53,7 @@ namespace EventManagementServer.Data
                 new Category { CategoryID = 2, CategoryName = "Sport", CategoryDescription = "Sport Event" },
                 new Category { CategoryID = 3, CategoryName = "Education", CategoryDescription = "Education Event" },
                 new Category { CategoryID = 4, CategoryName = "Business", CategoryDescription = "Business Event" },
-                new Category { CategoryID = 5, CategoryName = "Health", CategoryDescription = "Health Event" }  
+                new Category { CategoryID = 5, CategoryName = "Health", CategoryDescription = "Health Event" }
             );
 
         }

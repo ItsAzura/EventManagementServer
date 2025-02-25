@@ -20,7 +20,7 @@ namespace EventManagementServer.Models
         [Required, MaxLength(255)]
         public string PasswordHash { get; set; } = String.Empty;
         
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; }
 
         [ForeignKey("RoleID")]
         public  Role? Role { get; set; }
