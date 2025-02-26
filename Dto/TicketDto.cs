@@ -1,13 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace EventManagementServer.Models
+namespace EventManagementServer.Dto
 {
-    public class Ticket
+    public class TicketDto
     {
-        [Key]
-        public int TicketID { get; set; }
-
         [Required]
         public int EventAreaID { get; set; }
 
@@ -23,11 +19,7 @@ namespace EventManagementServer.Models
         [Required]
         public decimal Price { get; set; }
 
-        [Required, MaxLength(50)]
+        [MaxLength(50)]
         public string Status { get; set; } = "Unavailable"; // Available,  Unavailable , Sold Out
-
-        [ForeignKey("EventAreaID")]
-        public EventArea? EventArea { get; set; }
-
     }
 }
