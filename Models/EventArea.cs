@@ -18,8 +18,8 @@ namespace EventManagementServer.Models
         public int Capacity { get; set; }
 
         [ForeignKey("EventID")]
-        public required Event Event { get; set; }
+        public Event? Event { get; set; }
 
-        public required ICollection<Ticket> Tickets { get; set; }
+        public  ICollection<Ticket>? Tickets { get; set; }
     }
 }

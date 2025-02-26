@@ -36,9 +36,10 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpPost]
-        [Consumes("multipart/form-data")]
+        [Consumes("multipart/form-data")] //Kiểu request body là form-data 
         public async Task<ActionResult<Event>> CreateEvent([FromForm] EventDto _event)
         {
+            //Kiểm tra xem EventImageFile có tồn tại hay không
             if (_event.EventImageFile == null)
             {
                 ModelState.AddModelError("EventImageFile", "Event Image is required");
@@ -50,15 +51,18 @@ namespace EventManagementServer.Controllers
                 return BadRequest(ModelState);
             }
 
+            //Tạo thư mục Images nếu chưa tồn tại
             string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Images");
             if (!Directory.Exists(folderPath))
             {
                 Directory.CreateDirectory(folderPath);
             }
 
+            //Tạo tên mới cho file ảnh
             string newFileName = $"{DateTime.Now:yyyyMMddHHmmss}_{Path.GetFileName(_event.EventImageFile.FileName)}";
             string imagePath = Path.Combine(folderPath, newFileName);
 
+            //Lưu file ảnh vào thư mục Images
             using (var stream = new FileStream(imagePath, FileMode.Create))
             {
                 await _event.EventImageFile.CopyToAsync(stream);
@@ -97,13 +101,17 @@ namespace EventManagementServer.Controllers
                 return NotFound();
             }
 
+            //Tạo thư mục Images nếu chưa tồn tại
             string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Images");
             if (!Directory.Exists(folderPath))
             {
                 Directory.CreateDirectory(folderPath);
             }
 
+            //Tạo tên mới cho file ảnh
             string newFileName = existingEvent.EventImage;
+
+            //Nếu có file ảnh mới được gửi lên thì lưu file ảnh mới và xóa file ảnh cũ
             if(_event.EventImageFile != null)
             {
                 newFileName = $"{DateTime.Now:yyyyMMddHHmmss}_{Path.GetFileName(_event.EventImageFile.FileName)}";
