@@ -15,13 +15,14 @@ namespace EventManagementServer.Models
         [Required]
         public int TicketID { get; set; }
 
+        [Required]
         public int Quantity { get; set; }
 
         [ForeignKey("RegistrationID")]
-        public required Registration Registration { get; set; }
+        public Registration? Registration { get; set; }
 
         [ForeignKey("TicketID")]
-        public required Ticket Ticket { get; set; }
+        public Ticket? Ticket { get; set; }
 
     }
 }

@@ -11,21 +11,14 @@ namespace EventManagementServer.Models
         [Required]
         public int UserID { get; set; }
 
-        [Required]
-        public int EventID { get; set; }
-
         public DateTime RegistrationDate { get; set; }
 
         public DateTime? PaymentDate { get; set; }
 
         [ForeignKey("UserID")]
-        public required User User { get; set; }
+        public User? User { get; set; }
 
-        [ForeignKey("EventID")]
-        public required Event Event { get; set; }
-
-        public required ICollection<RegistrationDetail> RegistrationDetails { get; set; }
-
+        public ICollection<RegistrationDetail>? RegistrationDetails { get; set; }
 
     }
 }
