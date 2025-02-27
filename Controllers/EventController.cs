@@ -23,11 +23,25 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet("{id}")]
+        //Chưa setup pagingnation
         public async Task<ActionResult<Event>> GetEventById(int id)
         {
             var _event = await _context.Events.FirstOrDefaultAsync(e => e.EventID == id);
 
             if(_event == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(_event);
+        }
+
+        [HttpGet("user/{id}")]
+        public async Task<ActionResult<Event>> GetEventByUserId(int id)
+        {
+            var _event = await _context.Events.FirstOrDefaultAsync(e => e.CreatedBy == id);
+
+            if (_event == null)
             {
                 return NotFound();
             }

@@ -35,6 +35,19 @@ namespace EventManagementServer.Controllers
             return Ok(ticket);
         }
 
+        [HttpGet("eventarea/{id}")]
+        public async Task<ActionResult<Ticket>> GetTicketByEventAreaId(int id)
+        {
+            var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.EventAreaID == id);
+
+            if (ticket == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(ticket);
+        }
+
         [HttpPost]
         public async Task<ActionResult<Ticket>> CreateTicket([FromBody] TicketDto ticket)
         {

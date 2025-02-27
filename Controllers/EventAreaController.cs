@@ -35,6 +35,19 @@ namespace EventManagementServer.Controllers
             return Ok(eventArea);
         }
 
+        [HttpGet("event/{id}")]
+        public async Task<ActionResult<EventArea>> GetEventAreaByEventId(int id)
+        {
+            var eventArea = await _context.EventAreas.FirstOrDefaultAsync(ea => ea.EventID == id);
+
+            if (eventArea == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(eventArea);
+        }
+
         [HttpPost]
         public async Task<ActionResult<EventArea>> CreateEventArea([FromBody] EventAreaDto eventArea)
         {

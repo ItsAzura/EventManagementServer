@@ -20,10 +20,10 @@ namespace EventManagementServer.Models
         public DateTime CreateAt { get; set; } = DateTime.Now;
 
         [ForeignKey("EventID")]
-        public required Event Event { get; set; }
+        public Event? Event { get; set; }
 
         [ForeignKey("UserID")]
-        public required User User { get; set; }
+        public User? User { get; set; }
 
     }
 }
