@@ -27,11 +27,7 @@ namespace EventManagementServer.Controllers
         {
             var comment = await _context.Comments.FirstOrDefaultAsync(c => c.CommentID == id);
 
-            if (comment == null)
-            {
-                return NotFound();
-            }
-
+            if (comment == null) return NotFound();
             return Ok(comment);
         }
 
@@ -40,10 +36,7 @@ namespace EventManagementServer.Controllers
         {
             var comment = await _context.Comments.FirstOrDefaultAsync(c => c.UserID == id);
 
-            if (comment == null)
-            {
-                return NotFound();
-            }
+            if (comment == null) return NotFound();
 
             return Ok(comment);
         }
@@ -53,10 +46,7 @@ namespace EventManagementServer.Controllers
         {
             var comment = await _context.Comments.FirstOrDefaultAsync(c => c.EventID == id);
 
-            if (comment == null)
-            {
-                return NotFound();
-            }
+            if (comment == null) return NotFound();
 
             return Ok(comment);
         }
@@ -64,10 +54,7 @@ namespace EventManagementServer.Controllers
         [HttpPost]
         public async Task<ActionResult<Comment>> CreateComment([FromBody] CommentDto comment)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             Comment newComment = new Comment
             {
@@ -85,17 +72,11 @@ namespace EventManagementServer.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<Comment>> UpdateComment(int id, [FromBody] CommentDto comment)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var existingComment = await _context.Comments.FirstOrDefaultAsync(c => c.CommentID == id);
 
-            if (existingComment == null)
-            {
-                return NotFound();
-            }
+            if (existingComment == null) return NotFound();
 
             existingComment.EventID = comment.EventID;
             existingComment.UserID = comment.UserID;
@@ -111,10 +92,7 @@ namespace EventManagementServer.Controllers
         {
             var comment = await _context.Comments.FirstOrDefaultAsync(c => c.CommentID == id);
 
-            if (comment == null)
-            {
-                return NotFound();
-            }
+            if (comment == null) return NotFound();
 
             _context.Comments.Remove(comment);
             await _context.SaveChangesAsync();

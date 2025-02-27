@@ -17,21 +17,55 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Event>>> GetEvents()
+        public async Task<ActionResult<IEnumerable<Event>>> GetEvents(int page = 1, int pageSize = 10, int? categoryId = null, string? search = null)
         {
-            return await _context.Events.ToListAsync();
+            if (page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
+
+            // Query cơ bản
+            var query = _context.Events.AsQueryable();
+
+            // Lọc theo Category nếu có
+            if (categoryId.HasValue)
+            {
+                query = query.Where(e => _context.EventCategories // Lọc theo EventCategory
+                    .Where(ec => ec.CategoryID == categoryId.Value) // Lọc theo CategoryID
+                    .Select(ec => ec.EventID) // Lấy ra EventID
+                    .Contains(e.EventID)); // Kiểm tra EventID có nằm trong danh sách EventID của Category không
+            }
+
+            //Tìm theo title nếu có
+            if(!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(e => e.EventName.Contains(search));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var events = await query
+                .OrderBy(e => e.EventID)  // Sắp xếp theo ID (hoặc tùy chỉnh)
+                .Skip((page - 1) * pageSize) // Bỏ qua các phần tử trước đó
+                .Take(pageSize) // Lấy số phần tử cần
+                .ToListAsync();
+
+            var response = new
+            {
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                CurrentPage = page,
+                PageSize = pageSize,
+                Events = events
+            };
+
+            return Ok(response);
         }
 
+
         [HttpGet("{id}")]
-        //Chưa setup pagingnation
         public async Task<ActionResult<Event>> GetEventById(int id)
         {
             var _event = await _context.Events.FirstOrDefaultAsync(e => e.EventID == id);
 
-            if(_event == null)
-            {
-                return NotFound();
-            }
+            if(_event == null) return NotFound();
 
             return Ok(_event);
         }
@@ -41,10 +75,8 @@ namespace EventManagementServer.Controllers
         {
             var _event = await _context.Events.FirstOrDefaultAsync(e => e.CreatedBy == id);
 
-            if (_event == null)
-            {
-                return NotFound();
-            }
+            if (_event == null) return NotFound();
+            
 
             return Ok(_event);
         }
@@ -60,10 +92,7 @@ namespace EventManagementServer.Controllers
                 return BadRequest(ModelState);
             }
 
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             //Tạo thư mục Images nếu chưa tồn tại
             string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Images");
@@ -103,17 +132,11 @@ namespace EventManagementServer.Controllers
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<Event>> UpdateEvent(int id, [FromForm] EventDto _event)
         {
-            if(!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if(!ModelState.IsValid) return BadRequest(ModelState);
 
             var existingEvent = await _context.Events.FirstOrDefaultAsync(e => e.EventID == id);
 
-            if(existingEvent == null)
-            {
-                return NotFound();
-            }
+            if(existingEvent == null) return NotFound();
 
             //Tạo thư mục Images nếu chưa tồn tại
             string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Images");
@@ -160,10 +183,7 @@ namespace EventManagementServer.Controllers
         {
             var existingEvent = await _context.Events.FirstOrDefaultAsync(e => e.EventID == id);
 
-            if(existingEvent == null)
-            {
-                return NotFound();
-            }
+            if(existingEvent == null) return NotFound();
 
             string imagePath = "Images/" + existingEvent.EventImage;
             if(System.IO.File.Exists(imagePath))

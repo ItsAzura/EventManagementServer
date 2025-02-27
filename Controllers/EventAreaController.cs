@@ -27,10 +27,7 @@ namespace EventManagementServer.Controllers
         {
             var eventArea = await _context.EventAreas.FirstOrDefaultAsync(ea => ea.EventAreaID == id);
 
-            if (eventArea == null)
-            {
-                return NotFound();
-            }
+            if (eventArea == null) return NotFound();
 
             return Ok(eventArea);
         }
@@ -40,10 +37,7 @@ namespace EventManagementServer.Controllers
         {
             var eventArea = await _context.EventAreas.FirstOrDefaultAsync(ea => ea.EventID == id);
 
-            if (eventArea == null)
-            {
-                return NotFound();
-            }
+            if (eventArea == null) return NotFound();
 
             return Ok(eventArea);
         }
@@ -51,10 +45,7 @@ namespace EventManagementServer.Controllers
         [HttpPost]
         public async Task<ActionResult<EventArea>> CreateEventArea([FromBody] EventAreaDto eventArea)
         {
-            if(!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if(!ModelState.IsValid) return BadRequest(ModelState);
 
             EventArea newEventArea = new EventArea
             {
@@ -74,15 +65,9 @@ namespace EventManagementServer.Controllers
         { 
             var existingEventArea = await _context.EventAreas.FirstOrDefaultAsync(ea => ea.EventAreaID == id);
 
-            if (existingEventArea == null)
-            {
-                return NotFound();
-            }
+            if (existingEventArea == null) return NotFound();
 
-            if(!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if(!ModelState.IsValid) return BadRequest(ModelState);
 
             existingEventArea.EventID = eventArea.EventID;
             existingEventArea.AreaName = eventArea.AreaName;
@@ -97,10 +82,7 @@ namespace EventManagementServer.Controllers
         {
             var eventArea = await _context.EventAreas.FirstOrDefaultAsync(ea => ea.EventAreaID == id);
 
-            if (eventArea == null)
-            {
-                return NotFound();
-            }
+            if (eventArea == null) return NotFound();
 
             _context.EventAreas.Remove(eventArea);
             await _context.SaveChangesAsync();

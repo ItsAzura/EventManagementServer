@@ -17,9 +17,45 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Ticket>>> GetTickets()
+        public async Task<ActionResult<IEnumerable<Ticket>>> GetTickets(int page = 1, int pageSize = 10, int? Quantity = null, decimal? Price = null, string? search = null)
         {
-            return await _context.Tickets.ToListAsync();
+            if(page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
+
+            var query = _context.Tickets.AsQueryable();
+
+            if(Quantity.HasValue)
+            {
+                query = query.Where(t => t.Quantity == Quantity.Value);
+            }
+
+            if(Price.HasValue)
+            {
+                query = query.Where(t => t.Price == Price.Value);
+            }
+
+            if(!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(t => t.TicketName.Contains(search));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var tickets = await query
+                .OrderBy(t => t.TicketID)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var response = new
+            {
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                CurrentPage = page,
+                PageSize = pageSize,
+                Tickets = tickets
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
@@ -27,10 +63,7 @@ namespace EventManagementServer.Controllers
         {
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
 
-            if (ticket == null)
-            {
-                return NotFound();
-            }
+            if (ticket == null) return NotFound();
 
             return Ok(ticket);
         }
@@ -40,10 +73,7 @@ namespace EventManagementServer.Controllers
         {
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.EventAreaID == id);
 
-            if (ticket == null)
-            {
-                return NotFound();
-            }
+            if (ticket == null) return NotFound();
 
             return Ok(ticket);
         }
@@ -68,15 +98,9 @@ namespace EventManagementServer.Controllers
                 .Where(t => t.EventAreaID == ticket.EventAreaID)
                 .SumAsync(t =>(int?) t.Quantity) ?? 0;
 
-            if(ticket.Quantity > eventArea.Capacity)
-            {
-                return BadRequest("Quantity must be less than or equal to Event Area Capacity");
-            }
+            if(ticket.Quantity > eventArea.Capacity) return BadRequest("Quantity must be less than or equal to Event Area Capacity");
 
-            if(totalExistingQuantity + ticket.Quantity > eventArea.Capacity)
-            {
-                return BadRequest("Total quantity of tickets must be less than or equal to Event Area Capacity");
-            }
+            if(totalExistingQuantity + ticket.Quantity > eventArea.Capacity) return BadRequest("Total quantity of tickets must be less than or equal to Event Area Capacity");
 
             Ticket newTicket = new Ticket
             {
@@ -98,15 +122,9 @@ namespace EventManagementServer.Controllers
         {
             var existingTicket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
 
-            if (existingTicket == null)
-            {
-                return NotFound();
-            }
+            if (existingTicket == null) return NotFound();
 
-            if(!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if(!ModelState.IsValid) return BadRequest(ModelState);
 
             existingTicket.EventAreaID = ticket.EventAreaID;
             existingTicket.TicketName = ticket.TicketName;
@@ -125,10 +143,7 @@ namespace EventManagementServer.Controllers
         {
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
 
-            if (ticket == null)
-            {
-                return NotFound();
-            }
+            if (ticket == null) return NotFound();
 
             _context.Tickets.Remove(ticket);
             await _context.SaveChangesAsync();

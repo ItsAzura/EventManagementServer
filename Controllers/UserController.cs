@@ -19,9 +19,40 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        public async Task<ActionResult<IEnumerable<User>>> GetUsers(int page = 1, int pageSize = 10, int? RoleId = null, string? search = null)
         {
-            return await _context.Users.ToListAsync();
+            if(page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
+
+            var query = _context.Users.AsQueryable();
+
+            if(RoleId.HasValue)
+            {
+                query = query.Where(u => u.RoleID == RoleId.Value);
+            }
+
+            if(!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(u => u.UserName.Contains(search));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var users = await query
+                .OrderBy(u => u.UserID)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var response = new
+            {
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                CurrentPage = page,
+                PageSize = pageSize,
+                Users = users
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
@@ -29,10 +60,7 @@ namespace EventManagementServer.Controllers
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserID == id); 
 
-            if (user == null)
-            {
-                return NotFound();
-            }
+            if (user == null) return NotFound();
 
             return Ok(user);
         }
@@ -40,10 +68,7 @@ namespace EventManagementServer.Controllers
         [HttpPost]
         public async Task<ActionResult<User>> CreateUser([FromBody] UserDto user)
         {
-            if(!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if(!ModelState.IsValid) return BadRequest(ModelState);
 
             // Generate a random salt
             byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
@@ -75,17 +100,11 @@ namespace EventManagementServer.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<User>> UpdateUser(int id, [FromBody] UserDto user)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var existingUser = await _context.Users.FindAsync(id);
-            
-            if(existingUser == null)
-            {
-                return BadRequest();
-            }
+             
+            if(existingUser == null) return BadRequest();
      
             // Generate a random salt
             byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
@@ -115,10 +134,7 @@ namespace EventManagementServer.Controllers
         {
             var user = await _context.Users.FindAsync(id);
 
-            if(user == null)
-            {
-                return NotFound();
-            }
+            if(user == null) return NotFound();
 
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();

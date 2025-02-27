@@ -27,21 +27,15 @@ namespace EventManagementServer.Controllers
         {
             var eventCategory = await _context.EventCategories.FirstOrDefaultAsync(ec => ec.EventCategoryID == id);
 
-            if (eventCategory == null)
-            {
-                return NotFound();
-            }
+            if (eventCategory == null) return NotFound();
 
             return Ok(eventCategory);
         }
 
         [HttpPost]
         public async Task<ActionResult<EventCategory>> CreateEventCategory([FromBody] EventCategoryDto eventCategory)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+        { 
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             EventCategory newEventCategory = new EventCategory
             {
@@ -58,17 +52,11 @@ namespace EventManagementServer.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<EventCategory>> UpdateEventCategory(int id, [FromBody] EventCategoryDto eventCategory)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var existingEventCategory = await _context.EventCategories.FirstOrDefaultAsync(ec => ec.EventCategoryID == id);
 
-            if (existingEventCategory == null)
-            {
-                return NotFound();
-            }
+            if (existingEventCategory == null) return NotFound();
 
             existingEventCategory.EventID = eventCategory.EventID;
             existingEventCategory.CategoryID = eventCategory.CategoryID;
@@ -83,10 +71,7 @@ namespace EventManagementServer.Controllers
         {
             var eventCategory = await _context.EventCategories.FirstOrDefaultAsync(ec => ec.EventCategoryID == id);
 
-            if (eventCategory == null)
-            {
-                return NotFound();
-            }
+            if (eventCategory == null) return NotFound();
 
             _context.EventCategories.Remove(eventCategory);
             await _context.SaveChangesAsync();

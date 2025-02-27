@@ -17,9 +17,35 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
+        public async Task<ActionResult<IEnumerable<Category>>> GetCategories(int page = 1, int pageSize = 10, string? search = null)
         {
-            return await _context.Categories.ToListAsync();
+            if(page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
+
+            var query = _context.Categories.AsQueryable();
+
+            if(!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(c => c.CategoryName.Contains(search));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var categories = await query
+                .OrderBy(c => c.CategoryID)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var response = new
+            {
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                CurrentPage = page,
+                PageSize = pageSize,
+                Categories = categories
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
@@ -27,10 +53,7 @@ namespace EventManagementServer.Controllers
         {
             var category = await _context.Categories.FirstOrDefaultAsync(c => c.CategoryID == id);
 
-            if (category == null)
-            {
-                return NotFound();
-            }
+            if (category == null) return NotFound();
 
             return Ok(category);
         }
@@ -38,10 +61,7 @@ namespace EventManagementServer.Controllers
         [HttpPost]
         public async Task<ActionResult<Category>> CreateCategory([FromBody] CategoryDto category)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             Category newCategory = new Category
             {
@@ -58,17 +78,11 @@ namespace EventManagementServer.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<Category>> UpdateCategory(int id, [FromBody] CategoryDto category)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var existingCategory = await _context.Categories.FirstOrDefaultAsync(c => c.CategoryID == id);
 
-            if (existingCategory == null)
-            {
-                return NotFound();
-            }
+            if (existingCategory == null) return NotFound();
 
             existingCategory.CategoryName = category.CategoryName;
             existingCategory.CategoryDescription = category.CategoryDescription;
@@ -83,10 +97,7 @@ namespace EventManagementServer.Controllers
         {
             var category = await _context.Categories.FirstOrDefaultAsync(c => c.CategoryID == id);
 
-            if (category == null)
-            {
-                return NotFound();
-            }
+            if (category == null) return NotFound();
 
             _context.Categories.Remove(category);
             await _context.SaveChangesAsync();

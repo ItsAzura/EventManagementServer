@@ -27,10 +27,7 @@ namespace EventManagementServer.Controllers
         {
             var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleID == id);
 
-            if (role == null)
-            {
-                return NotFound();
-            }
+            if (role == null) return NotFound();
 
             return Ok(role);
         }
@@ -38,10 +35,7 @@ namespace EventManagementServer.Controllers
         [HttpPost]
         public async Task<ActionResult<Role>> CreateRole([FromBody] RoleDto role)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             Role newRole = new Role
             {
@@ -58,17 +52,11 @@ namespace EventManagementServer.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<Role>> UpdateRole(int id, [FromBody] RoleDto role)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var existingRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleID == id);
 
-            if (existingRole == null)
-            {
-                return NotFound();
-            }
+            if (existingRole == null) return NotFound();
 
             existingRole.RoleName = role.RoleName;
             existingRole.RoleDescription = role.RoleDescription;
@@ -83,10 +71,7 @@ namespace EventManagementServer.Controllers
         {
             var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleID == id);
 
-            if (role == null)
-            {
-                return NotFound();
-            }
+            if (role == null) return NotFound();
 
             _context.Roles.Remove(role);
             await _context.SaveChangesAsync();
