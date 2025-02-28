@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
 using EventManagementServer.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +17,7 @@ namespace EventManagementServer.Controllers
             _context = context;
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Registration>>> GetRegistrations()
         {
@@ -24,6 +26,7 @@ namespace EventManagementServer.Controllers
                 .ToListAsync();
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<Registration>> GetRegistration(int id)
         {
@@ -37,6 +40,7 @@ namespace EventManagementServer.Controllers
             return Ok(registration);
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<Registration>> CreateRegistration([FromBody] RegistrationDto registrationDto)
         {
@@ -86,6 +90,7 @@ namespace EventManagementServer.Controllers
 
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<ActionResult<Registration>> UpdateRegistration(int id, [FromBody] RegistrationDto registrationDto)
         {
@@ -161,6 +166,7 @@ namespace EventManagementServer.Controllers
             return Ok(registration);
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRegistration(int id)
         {

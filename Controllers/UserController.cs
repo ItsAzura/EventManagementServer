@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
 using EventManagementServer.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,12 +13,14 @@ namespace EventManagementServer.Controllers
     public class UserController : Controller
     {
         private readonly EventDbContext _context;
+        private readonly IConfiguration configuration;
 
         public UserController(EventDbContext context)
         {
             _context = context;
         }
 
+        [Authorize(Roles = "1")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers(int page = 1, int pageSize = 10, int? RoleId = null, string? search = null)
         {
@@ -55,6 +58,7 @@ namespace EventManagementServer.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = "1,2")]
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUserById(int id)
         {
@@ -65,6 +69,7 @@ namespace EventManagementServer.Controllers
             return Ok(user);
         }
 
+        [Authorize(Roles = "1")]
         [HttpPost]
         public async Task<ActionResult<User>> CreateUser([FromBody] UserDto user)
         {
@@ -86,7 +91,7 @@ namespace EventManagementServer.Controllers
             {
                 UserName = user.UserName,
                 Email = user.Email,
-                RoleID = user.RoleID,
+                RoleID = configuration.GetValue<int>("User"),
                 PasswordHash = hashPassword
             };
 
@@ -97,8 +102,9 @@ namespace EventManagementServer.Controllers
             return CreatedAtAction(nameof(GetUserById), new { id = newUser.UserID }, newUser);
         }
 
+        [Authorize(Roles = "1")]
         [HttpPut("{id}")]
-        public async Task<ActionResult<User>> UpdateUser(int id, [FromBody] UserDto user)
+        public async Task<ActionResult<User>> UpdateUser(int id, [FromBody] UpdateUserDto user)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -129,6 +135,7 @@ namespace EventManagementServer.Controllers
             return Ok();
         }
 
+        [Authorize(Roles = "1")]
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteUser(int id)
         {

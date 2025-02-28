@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
 using EventManagementServer.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,12 +17,14 @@ namespace EventManagementServer.Controllers
             _context = context;
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<EventCategory>>> GetEventCategories()
         {
             return await _context.EventCategories.ToListAsync();
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<EventCategory>> GetEventCategoryById(int id)
         {
@@ -32,6 +35,7 @@ namespace EventManagementServer.Controllers
             return Ok(eventCategory);
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<EventCategory>> CreateEventCategory([FromBody] EventCategoryDto eventCategory)
         { 
@@ -49,6 +53,7 @@ namespace EventManagementServer.Controllers
             return CreatedAtAction(nameof(GetEventCategoryById), new { id = newEventCategory.EventCategoryID }, newEventCategory);
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<ActionResult<EventCategory>> UpdateEventCategory(int id, [FromBody] EventCategoryDto eventCategory)
         {
@@ -66,6 +71,7 @@ namespace EventManagementServer.Controllers
             return Ok(existingEventCategory);
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteEventCategory(int id)
         {

@@ -22,6 +22,9 @@ namespace EventManagementServer.Models
         
         public DateTime CreatedAt { get; set; }
 
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiryTime { get; set; }
+
         [ForeignKey("RoleID")]
         public  Role? Role { get; set; }
 

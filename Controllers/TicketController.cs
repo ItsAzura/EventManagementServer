@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
 using EventManagementServer.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -78,6 +79,7 @@ namespace EventManagementServer.Controllers
             return Ok(ticket);
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<Ticket>> CreateTicket([FromBody] TicketDto ticket)
         {
@@ -117,6 +119,7 @@ namespace EventManagementServer.Controllers
             return CreatedAtAction(nameof(GetTicketById), new { id = newTicket.TicketID }, newTicket);
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<ActionResult<Ticket>> UpdateCategory(int id, [FromBody] TicketDto ticket)
         {
@@ -138,6 +141,7 @@ namespace EventManagementServer.Controllers
             return Ok(existingTicket);
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<ActionResult<Ticket>> DeleteTicket(int id)
         {

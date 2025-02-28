@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
 using EventManagementServer.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +17,7 @@ namespace EventManagementServer.Controllers
             _context = context;
         }
 
+        [Authorize(Roles = "1")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategories(int page = 1, int pageSize = 10, string? search = null)
         {
@@ -48,6 +50,7 @@ namespace EventManagementServer.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = "1")]
         [HttpGet("{id}")]
         public async Task<ActionResult<Category>> GetCategoryById(int id)
         {
@@ -58,6 +61,7 @@ namespace EventManagementServer.Controllers
             return Ok(category);
         }
 
+        [Authorize(Roles = "1")]
         [HttpPost]
         public async Task<ActionResult<Category>> CreateCategory([FromBody] CategoryDto category)
         {
@@ -75,6 +79,7 @@ namespace EventManagementServer.Controllers
             return CreatedAtAction(nameof(GetCategoryById), new { id = newCategory.CategoryID }, newCategory);
         }
 
+        [Authorize(Roles = "1")]
         [HttpPut("{id}")]
         public async Task<ActionResult<Category>> UpdateCategory(int id, [FromBody] CategoryDto category)
         {
@@ -92,6 +97,7 @@ namespace EventManagementServer.Controllers
             return Ok(existingCategory);
         }
 
+        [Authorize(Roles = "1")]
         [HttpDelete("{id}")]
         public async Task<ActionResult<Category>> DeleteCategory(int id)
         {

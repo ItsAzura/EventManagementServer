@@ -1,5 +1,9 @@
 ﻿using EventManagementServer.Data;
+using EventManagementServer.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +20,25 @@ builder.Services.AddDbContext<EventDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
+
+//Đăng ký dịch vụ xác thực
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options => {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration.GetValue<string>("AppSettings:Issuer"),
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration.GetValue<string>("AppSettings:Audience"),
+            ValidateLifetime = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:Token"]!)),
+            ValidateIssuerSigningKey = true
+        };
+    });
+
+//Đăng ký dịch vụ AuthService
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 

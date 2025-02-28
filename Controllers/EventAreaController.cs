@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
 using EventManagementServer.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,6 +43,7 @@ namespace EventManagementServer.Controllers
             return Ok(eventArea);
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<EventArea>> CreateEventArea([FromBody] EventAreaDto eventArea)
         {
@@ -60,6 +62,7 @@ namespace EventManagementServer.Controllers
             return CreatedAtAction(nameof(GetEventAreaById), new { id = newEventArea.EventAreaID }, newEventArea);
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<ActionResult<EventArea>> UpdateEventArea(int id, [FromBody] EventAreaDto eventArea)
         { 
@@ -77,6 +80,7 @@ namespace EventManagementServer.Controllers
             return Ok(existingEventArea);
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteEventArea(int id)
         {

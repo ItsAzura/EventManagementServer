@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
 using EventManagementServer.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -81,6 +82,7 @@ namespace EventManagementServer.Controllers
             return Ok(_event);
         }
 
+        [Authorize]
         [HttpPost]
         [Consumes("multipart/form-data")] //Kiểu request body là form-data 
         public async Task<ActionResult<Event>> CreateEvent([FromForm] EventDto _event)
@@ -127,7 +129,7 @@ namespace EventManagementServer.Controllers
             return CreatedAtAction(nameof(GetEventById), new { id = newEvent.EventID }, newEvent);
         }
 
-
+        [Authorize]
         [HttpPut("{id}")]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<Event>> UpdateEvent(int id, [FromForm] EventDto _event)
@@ -178,6 +180,7 @@ namespace EventManagementServer.Controllers
             return Ok();
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteEvent(int id)
         {

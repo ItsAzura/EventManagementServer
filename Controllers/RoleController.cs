@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
 using EventManagementServer.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,12 +17,14 @@ namespace EventManagementServer.Controllers
             _context = context;
         }
 
+        [Authorize(Roles = "1")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Role>>> GetRoles()
         {
             return await _context.Roles.ToListAsync();
         }
 
+        [Authorize(Roles = "1")]
         [HttpGet("{id}")]
         public async Task<ActionResult<Role>> GetRoleById(int id)
         {
@@ -32,6 +35,7 @@ namespace EventManagementServer.Controllers
             return Ok(role);
         }
 
+        [Authorize(Roles = "1")]
         [HttpPost]
         public async Task<ActionResult<Role>> CreateRole([FromBody] RoleDto role)
         {
@@ -49,6 +53,7 @@ namespace EventManagementServer.Controllers
             return CreatedAtAction(nameof(GetRoleById), new { id = newRole.RoleID }, newRole);
         }
 
+        [Authorize(Roles = "1")]
         [HttpPut("{id}")]
         public async Task<ActionResult<Role>> UpdateRole(int id, [FromBody] RoleDto role)
         {
@@ -66,6 +71,7 @@ namespace EventManagementServer.Controllers
             return Ok(existingRole);
         }
 
+        [Authorize(Roles = "1")]
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteRole(int id)
         {
