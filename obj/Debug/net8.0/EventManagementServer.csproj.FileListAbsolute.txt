@@ -170,3 +170,4 @@ D:\Learn C#\EventManagementServer\EventManagementServer\obj\Debug\net8.0\ref\Eve
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Npgsql.dll
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Npgsql.EntityFrameworkCore.PostgreSQL.dll
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Newtonsoft.Json.dll
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll

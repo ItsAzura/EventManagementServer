@@ -4,6 +4,7 @@ using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace EventManagementServer.Controllers
 {
@@ -21,7 +22,8 @@ namespace EventManagementServer.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Registration>>> GetRegistrations()
         {
-            return await _context.Registrations.Include(r => r.RegistrationDetails)
+            return await _context.Registrations
+                .Include(r => r.RegistrationDetails)
                 .ThenInclude(rd => rd.Ticket)
                 .ToListAsync();
         }
@@ -45,6 +47,12 @@ namespace EventManagementServer.Controllers
         public async Task<ActionResult<Registration>> CreateRegistration([FromBody] RegistrationDto registrationDto)
         {
             if(!ModelState.IsValid) return BadRequest(ModelState);
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (registrationDto.UserID.ToString() != userId || userRole != "1")
+                return Forbid();
 
             var ticketIds = registrationDto.RegistrationDetails.Select(rd => rd.TicketID).ToList();
 
@@ -102,6 +110,12 @@ namespace EventManagementServer.Controllers
 
             if (registration == null)
                 return NotFound($"Registration with ID {id} not found.");
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (registration.UserID.ToString() != userId || userRole != "1")
+                return Forbid();
 
             var ticketIds = registrationDto.RegistrationDetails.Select(rd => rd.TicketID).ToList();
 
@@ -174,18 +188,25 @@ namespace EventManagementServer.Controllers
                 .Include(r => r.RegistrationDetails)
                 .FirstOrDefaultAsync(r => r.RegistrationID == id);
 
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
             if (registration == null)
                 return NotFound($"Registration with ID {id} not found.");
 
-            // Xóa chi tiết đăng ký
+            if (registration.UserID.ToString() != userId || userRole != "1")
+                return Forbid();
+
+            var deletedRegistration = registration; // Lưu thông tin đăng ký bị xóa
+
             _context.RegistrationDetails.RemoveRange(registration.RegistrationDetails);
 
-            // Xóa đăng ký chính
             _context.Registrations.Remove(registration);
 
             await _context.SaveChangesAsync();
 
-            return NoContent(); // Xóa thành công, trả về 204
+            return Ok(deletedRegistration); // Trả về dữ liệu đã xóa
+
         }
 
 

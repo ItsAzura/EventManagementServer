@@ -17,7 +17,6 @@ namespace EventManagementServer.Controllers
             _context = context;
         }
 
-        [Authorize(Roles = "1")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategories(int page = 1, int pageSize = 10, string? search = null)
         {
@@ -50,7 +49,6 @@ namespace EventManagementServer.Controllers
             return Ok(response);
         }
 
-        [Authorize(Roles = "1")]
         [HttpGet("{id}")]
         public async Task<ActionResult<Category>> GetCategoryById(int id)
         {

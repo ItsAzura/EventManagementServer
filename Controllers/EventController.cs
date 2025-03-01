@@ -4,6 +4,7 @@ using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace EventManagementServer.Controllers
 {
@@ -64,9 +65,11 @@ namespace EventManagementServer.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Event>> GetEventById(int id)
         {
-            var _event = await _context.Events.FirstOrDefaultAsync(e => e.EventID == id);
+            var _event = await _context.Events
+                .Where(ea => ea.EventID == id)
+                .ToListAsync();
 
-            if(_event == null) return NotFound();
+            if (_event == null) return NotFound();
 
             return Ok(_event);
         }
@@ -74,11 +77,12 @@ namespace EventManagementServer.Controllers
         [HttpGet("user/{id}")]
         public async Task<ActionResult<Event>> GetEventByUserId(int id)
         {
-            var _event = await _context.Events.FirstOrDefaultAsync(e => e.CreatedBy == id);
+            var _event = await _context.Events
+                .Where(ea => ea.CreatedBy == id)
+                .FirstOrDefaultAsync(e => e.CreatedBy == id);
 
             if (_event == null) return NotFound();
             
-
             return Ok(_event);
         }
 
@@ -95,6 +99,12 @@ namespace EventManagementServer.Controllers
             }
 
             if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (_event == null || (_event.CreatedBy.ToString() != userId && userRole != "1" ))
+                return Forbid();
 
             //Tạo thư mục Images nếu chưa tồn tại
             string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Images");
@@ -140,6 +150,12 @@ namespace EventManagementServer.Controllers
 
             if(existingEvent == null) return NotFound();
 
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (existingEvent.CreatedBy.ToString() != userId && userRole != "1")
+                return Forbid();
+
             //Tạo thư mục Images nếu chưa tồn tại
             string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Images");
             if (!Directory.Exists(folderPath))
@@ -184,9 +200,16 @@ namespace EventManagementServer.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteEvent(int id)
         {
-            var existingEvent = await _context.Events.FirstOrDefaultAsync(e => e.EventID == id);
+            var existingEvent = await _context.Events
+                .FirstOrDefaultAsync(e => e.EventID == id);
 
             if(existingEvent == null) return NotFound();
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (existingEvent.CreatedBy.ToString() != userId && userRole != "1")
+                return Forbid();
 
             string imagePath = "Images/" + existingEvent.EventImage;
             if(System.IO.File.Exists(imagePath))

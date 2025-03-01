@@ -4,6 +4,7 @@ using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace EventManagementServer.Controllers
 {
@@ -41,11 +42,17 @@ namespace EventManagementServer.Controllers
         { 
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
             EventCategory newEventCategory = new EventCategory
             {
                 EventID = eventCategory.EventID,
                 CategoryID = eventCategory.CategoryID,
             };
+
+            if (newEventCategory.Event == null || (newEventCategory.Event.CreatedBy.ToString() != userId && userRole != "1"))
+                return Forbid();
 
             _context.EventCategories.Add(newEventCategory);
             await _context.SaveChangesAsync();
@@ -63,6 +70,12 @@ namespace EventManagementServer.Controllers
 
             if (existingEventCategory == null) return NotFound();
 
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (existingEventCategory.Event == null || (existingEventCategory.Event.CreatedBy.ToString() != userId && userRole != "1"))
+                return Forbid();
+
             existingEventCategory.EventID = eventCategory.EventID;
             existingEventCategory.CategoryID = eventCategory.CategoryID;
 
@@ -75,9 +88,17 @@ namespace EventManagementServer.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteEventCategory(int id)
         {
-            var eventCategory = await _context.EventCategories.FirstOrDefaultAsync(ec => ec.EventCategoryID == id);
+            var eventCategory = await _context.EventCategories
+                .Include(ec => ec.Event)
+                .FirstOrDefaultAsync(ec => ec.EventCategoryID == id);
 
             if (eventCategory == null) return NotFound();
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (eventCategory.Event?.CreatedBy.ToString() != userId && userRole != "1")
+                return Forbid();
 
             _context.EventCategories.Remove(eventCategory);
             await _context.SaveChangesAsync();

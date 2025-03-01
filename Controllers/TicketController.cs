@@ -4,6 +4,7 @@ using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace EventManagementServer.Controllers
 {
@@ -88,6 +89,9 @@ namespace EventManagementServer.Controllers
                 return BadRequest(ModelState);
             }
 
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
             var eventArea = await _context.EventAreas.FirstOrDefaultAsync(e => e.EventAreaID == ticket.EventAreaID);
 
             if (eventArea == null)
@@ -113,6 +117,9 @@ namespace EventManagementServer.Controllers
                 Price = ticket.Price,
             };
 
+            if (newTicket == null || (newTicket.EventArea?.Event?.CreatedBy.ToString() != userId && userRole != "1"))
+                return Forbid();
+
             _context.Tickets.Add(newTicket);
             await _context.SaveChangesAsync();
 
@@ -127,7 +134,13 @@ namespace EventManagementServer.Controllers
 
             if (existingTicket == null) return NotFound();
 
-            if(!ModelState.IsValid) return BadRequest(ModelState);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (existingTicket.EventArea?.Event?.CreatedBy.ToString() != userId && userRole != "1")
+                return Forbid();
+
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             existingTicket.EventAreaID = ticket.EventAreaID;
             existingTicket.TicketName = ticket.TicketName;
@@ -148,6 +161,12 @@ namespace EventManagementServer.Controllers
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
 
             if (ticket == null) return NotFound();
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (ticket.EventArea?.Event?.CreatedBy.ToString() != userId && userRole != "1")
+                return Forbid();
 
             _context.Tickets.Remove(ticket);
             await _context.SaveChangesAsync();

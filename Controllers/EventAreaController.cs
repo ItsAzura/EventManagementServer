@@ -4,6 +4,7 @@ using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace EventManagementServer.Controllers
 {
@@ -26,11 +27,13 @@ namespace EventManagementServer.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<EventArea>> GetEventAreaById(int id)
         {
-            var eventArea = await _context.EventAreas.FirstOrDefaultAsync(ea => ea.EventAreaID == id);
+            var eventAreas = await _context.EventAreas
+                .Where(ea => ea.EventID == id)
+                .ToListAsync();
 
-            if (eventArea == null) return NotFound();
+            if (!eventAreas.Any()) return NotFound();
 
-            return Ok(eventArea);
+            return Ok(eventAreas);
         }
 
         [HttpGet("event/{id}")]
@@ -49,12 +52,18 @@ namespace EventManagementServer.Controllers
         {
             if(!ModelState.IsValid) return BadRequest(ModelState);
 
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
             EventArea newEventArea = new EventArea
             {
                 EventID = eventArea.EventID,
                 AreaName = eventArea.AreaName,
                 Capacity = eventArea.Capacity,
             };
+
+            if (newEventArea?.Event == null || (newEventArea.Event.CreatedBy.ToString() != userId && userRole != "1"))
+                return Forbid();
 
             _context.EventAreas.Add(newEventArea);
             await _context.SaveChangesAsync();
@@ -72,6 +81,13 @@ namespace EventManagementServer.Controllers
 
             if(!ModelState.IsValid) return BadRequest(ModelState);
 
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (existingEventArea?.Event == null || (existingEventArea.Event.CreatedBy.ToString() != userId && userRole != "1"))
+                return Forbid();
+
+
             existingEventArea.EventID = eventArea.EventID;
             existingEventArea.AreaName = eventArea.AreaName;
             existingEventArea.Capacity = eventArea.Capacity;
@@ -84,9 +100,17 @@ namespace EventManagementServer.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteEventArea(int id)
         {
-            var eventArea = await _context.EventAreas.FirstOrDefaultAsync(ea => ea.EventAreaID == id);
+            var eventArea = await _context.EventAreas
+                .Include(e => e.Event)
+                .FirstOrDefaultAsync(ea => ea.EventAreaID == id);
 
             if (eventArea == null) return NotFound();
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (eventArea.Event?.CreatedBy.ToString() != userId && userRole != "1")
+                return Forbid();
 
             _context.EventAreas.Remove(eventArea);
             await _context.SaveChangesAsync();

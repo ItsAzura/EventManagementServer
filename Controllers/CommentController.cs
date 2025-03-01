@@ -4,6 +4,7 @@ using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace EventManagementServer.Controllers
 {
@@ -58,6 +59,12 @@ namespace EventManagementServer.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (comment == null || comment.UserID.ToString() != userId && userRole != "1") 
+                return Forbid();
+
             Comment newComment = new Comment
             {
                 EventID = comment.EventID,
@@ -81,6 +88,11 @@ namespace EventManagementServer.Controllers
 
             if (existingComment == null) return NotFound();
 
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (existingComment.UserID.ToString() != userId && userRole != "1") return Forbid();
+
             existingComment.EventID = comment.EventID;
             existingComment.UserID = comment.UserID;
             existingComment.Content = comment.Content;
@@ -98,10 +110,20 @@ namespace EventManagementServer.Controllers
 
             if (comment == null) return NotFound();
 
-            _context.Comments.Remove(comment);
-            await _context.SaveChangesAsync();
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            return Ok(comment);
+            if (comment.UserID.ToString() == userId && userRole == "1")
+            {
+                _context.Comments.Remove(comment);
+                await _context.SaveChangesAsync();
+
+                return Ok(comment);
+            }
+
+            return Forbid();
+
+
         }
     }
 }
