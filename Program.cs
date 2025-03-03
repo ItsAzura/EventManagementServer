@@ -40,6 +40,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 //Đăng ký dịch vụ AuthService
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+//Đăng ký dịch vụ NotificationHub
+builder.Services.AddSignalR();
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -54,5 +58,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHub<NotificationHub>("/notificationHub");
 
 app.Run();

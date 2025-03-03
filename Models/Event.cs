@@ -26,6 +26,8 @@ namespace EventManagementServer.Models
         [Required]
         public int CreatedBy { get; set; }
 
+        public string EventStatus { get; set; } = String.Empty; //Pending, Approved, Rejected
+
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey("CreatedBy")]

@@ -1,13 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace EventManagementServer.Models
+namespace EventManagementServer.Dto
 {
-    public class Notification
+    public class NotificationDto
     {
-        [Key]
-        public int NotificationID { get; set; }
-
         [Required]
         public int UserID { get; set; }
 
@@ -20,8 +16,5 @@ namespace EventManagementServer.Models
         public bool IsRead { get; set; }
 
         public DateTime CreatedAt { get; set; }
-
-        [ForeignKey("UserID")]
-        public User? User { get; set; }
     }
 }

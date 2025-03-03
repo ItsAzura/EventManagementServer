@@ -1,8 +1,10 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
 using EventManagementServer.Models;
+using EventManagementServer.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -44,6 +46,7 @@ namespace EventManagementServer.Controllers
             var totalCount = await query.CountAsync();
 
             var events = await query
+                .Where(e => e.EventStatus == "Approved") // Lọc theo trạng thái
                 .OrderBy(e => e.EventID)  // Sắp xếp theo ID (hoặc tùy chỉnh)
                 .Skip((page - 1) * pageSize) // Bỏ qua các phần tử trước đó
                 .Take(pageSize) // Lấy số phần tử cần
@@ -66,7 +69,7 @@ namespace EventManagementServer.Controllers
         public async Task<ActionResult<Event>> GetEventById(int id)
         {
             var _event = await _context.Events
-                .Where(ea => ea.EventID == id)
+                .Where(ea => ea.EventID == id && ea.EventStatus == "Approved")
                 .ToListAsync();
 
             if (_event == null) return NotFound();
@@ -78,7 +81,7 @@ namespace EventManagementServer.Controllers
         public async Task<ActionResult<Event>> GetEventByUserId(int id)
         {
             var _event = await _context.Events
-                .Where(ea => ea.CreatedBy == id)
+                .Where(ea => ea.CreatedBy == id && ea.EventStatus == "Approved")
                 .FirstOrDefaultAsync(e => e.CreatedBy == id);
 
             if (_event == null) return NotFound();
@@ -89,7 +92,7 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpPost]
         [Consumes("multipart/form-data")] //Kiểu request body là form-data 
-        public async Task<ActionResult<Event>> CreateEvent([FromForm] EventDto _event)
+        public async Task<ActionResult<Event>> CreateEvent([FromForm] EventDto _event, [FromServices] IHubContext<NotificationHub> hubContext)
         {
             //Kiểm tra xem EventImageFile có tồn tại hay không
             if (_event.EventImageFile == null)
@@ -103,8 +106,10 @@ namespace EventManagementServer.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if (_event == null || (_event.CreatedBy.ToString() != userId && userRole != "1" ))
+            if (_event == null) return BadRequest("Invalid event data.");
+            if (_event.CreatedBy.ToString() != userId && userRole != "1")
                 return Forbid();
+
 
             //Tạo thư mục Images nếu chưa tồn tại
             string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Images");
@@ -123,6 +128,7 @@ namespace EventManagementServer.Controllers
                 await _event.EventImageFile.CopyToAsync(stream);
             }
 
+            //Tạo sự kiện mới
             var newEvent = new Event
             {
                 EventName = _event.EventName,
@@ -130,13 +136,155 @@ namespace EventManagementServer.Controllers
                 EventDate = _event.EventDate.ToUniversalTime(),
                 EventLocation = _event.EventLocation,
                 EventImage = newFileName,
-                CreatedBy = _event.CreatedBy
+                CreatedBy = _event.CreatedBy,
+                EventStatus = "Pending",
             };
 
             _context.Events.Add(newEvent);
             await _context.SaveChangesAsync();
 
+            var admin = await _context.Users.FirstOrDefaultAsync(u => u.RoleID == 1);
+
+            //Tạo thông báo cho admin
+            if(admin != null)
+            {
+                var notification = new Notification
+                {
+                    UserID = admin.UserID,
+                    Message = $"There is a new event arrangements forum: {newEvent.EventName}",
+                    Type = "Info",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await hubContext.Clients.User(admin.UserID.ToString()).SendAsync("ReceiveNotification", new
+                {
+                    Title = "New Event",
+                    Message = $"There is a new event arrangements forum: {newEvent.EventName}",
+                    EventId = newEvent.EventID,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                _context.Notifications.Add(notification);
+            }
+
+            await _context.SaveChangesAsync();
+
             return CreatedAtAction(nameof(GetEventById), new { id = newEvent.EventID }, newEvent);
+        }
+
+        [Authorize(Roles = "1")]
+        [HttpPut("{id}/approve")]
+        public async Task<ActionResult> ApproveEvent(int id, [FromServices] IHubContext<NotificationHub> hubContext)
+        {
+            var existingEvent = await _context.Events.FirstOrDefaultAsync(e => e.EventID == id);
+
+            if(existingEvent == null) return NotFound();
+
+            //Thay đổi trạng thái của sự kiện
+            existingEvent.EventStatus = "Approved";
+
+            //Lấy danh sách tất cả người dùng
+            var users = await _context.Users.ToListAsync();
+
+            //Lấy thông tin người tạo sự kiện
+            var eventCreator = users.FirstOrDefault(u => u.UserID == existingEvent.CreatedBy);
+
+            var notifications = new List<Notification>();
+
+            //Tạo thông báo cho người tạo sự kiện
+            if (eventCreator != null)
+            {
+                notifications.Add(new Notification {
+                    UserID = eventCreator.UserID,
+                    Message = $"Event {existingEvent.EventName} has been approved",
+                    Type = "Success",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                await hubContext.Clients.User(eventCreator.UserID.ToString()).SendAsync("ReceiveNotification", new
+                {
+                    Title = "Event Approved",
+                    Message = $"Event {existingEvent.EventName} has been approved",
+                    EventId = existingEvent.EventID,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            //Tạo thông báo cho tất cả người dùng
+            var otherUsers = users.Where(u => u.UserID != existingEvent.CreatedBy).ToList();
+            foreach(var user in otherUsers)
+            {
+                notifications.Add(new Notification
+                {
+                    UserID = user.UserID,
+                    Message = $"There is a new event arrangements forum: {existingEvent.EventName}",
+                    Type = "Info",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            //Lưu thông báo vào database
+            _context.Notifications.AddRange(notifications);
+            await _context.SaveChangesAsync();
+
+            //Gửi thông báo đến tất cả người dùng trừ người tạo sự kiện
+            await hubContext.Clients.AllExcept(eventCreator?.UserID.ToString()).SendAsync(
+                "ReceiveNotification",
+                new
+                {
+                    Title = "New Event",
+                    Message = $"There is a new event arrangements forum: {existingEvent.EventName}",
+                    EventId = existingEvent.EventID,
+                    CreatedAt = DateTime.UtcNow
+                }
+            );
+
+            return Ok();
+        }
+
+        [Authorize(Roles = "1")]
+        [HttpPut("{id}/reject")]
+        public async Task<ActionResult> RejectEvent(int id, [FromServices] IHubContext<NotificationHub> hubContext)
+        {
+            var existingEvent = await _context.Events.FirstOrDefaultAsync(e => e.EventID == id);
+
+            if(existingEvent == null) return NotFound();
+
+            existingEvent.EventStatus = "Rejected";
+
+            var users = await _context.Users.ToListAsync();
+
+            var eventCreator = users.FirstOrDefault(u => u.UserID == existingEvent.CreatedBy);
+
+            if (eventCreator != null)
+            {
+                var notification = new Notification
+                {
+                    UserID = eventCreator.UserID,
+                    Message = $"Event {existingEvent.EventName} has been rejected",
+                    Type = "Error",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await hubContext.Clients.User(eventCreator.UserID.ToString())
+                    .SendAsync("ReceiveNotification", new
+                {
+                        Title = "Event Rejected",
+                        Message = $"Event {existingEvent.EventName} has been rejected",
+                        EventId = existingEvent.EventID,
+                        CreatedAt = DateTime.UtcNow
+                });
+
+                _context.Notifications.Add(notification);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok();
         }
 
         [Authorize]

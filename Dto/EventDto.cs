@@ -21,6 +21,8 @@ namespace EventManagementServer.Dto
 
         [Required(ErrorMessage = "Event Image is required")]
         public IFormFile? EventImageFile { get; set; } 
+
+        public string EventStatus { get; set; } = string.Empty;
     }
 
 }
