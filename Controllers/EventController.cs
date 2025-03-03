@@ -141,7 +141,6 @@ namespace EventManagementServer.Controllers
             };
 
             _context.Events.Add(newEvent);
-            await _context.SaveChangesAsync();
 
             var admin = await _context.Users.FirstOrDefaultAsync(u => u.RoleID == 1);
 
@@ -157,6 +156,11 @@ namespace EventManagementServer.Controllers
                     CreatedAt = DateTime.UtcNow
                 };
 
+                _context.Notifications.Add(notification);
+            }
+            await _context.SaveChangesAsync();
+
+            if (admin != null) {
                 await hubContext.Clients.User(admin.UserID.ToString()).SendAsync("ReceiveNotification", new
                 {
                     Title = "New Event",
@@ -164,11 +168,7 @@ namespace EventManagementServer.Controllers
                     EventId = newEvent.EventID,
                     CreatedAt = DateTime.UtcNow
                 });
-
-                _context.Notifications.Add(notification);
             }
-
-            await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetEventById), new { id = newEvent.EventID }, newEvent);
         }
@@ -242,7 +242,12 @@ namespace EventManagementServer.Controllers
                 }
             );
 
-            return Ok();
+            return Ok(new
+            {
+                success = true,
+                message = "Event Approved",
+                eventId = existingEvent.EventID
+            });
         }
 
         [Authorize(Roles = "1")]
@@ -270,27 +275,36 @@ namespace EventManagementServer.Controllers
                     CreatedAt = DateTime.UtcNow
                 };
 
-                await hubContext.Clients.User(eventCreator.UserID.ToString())
-                    .SendAsync("ReceiveNotification", new
-                {
-                        Title = "Event Rejected",
-                        Message = $"Event {existingEvent.EventName} has been rejected",
-                        EventId = existingEvent.EventID,
-                        CreatedAt = DateTime.UtcNow
-                });
-
                 _context.Notifications.Add(notification);
             }
 
             await _context.SaveChangesAsync();
 
-            return Ok();
+
+            if (eventCreator != null)
+            {
+                await hubContext.Clients.User(eventCreator.UserID.ToString())
+                   .SendAsync("ReceiveNotification", new
+                   {
+                       Title = "Event Rejected",
+                       Message = $"Event {existingEvent.EventName} has been rejected",
+                       EventId = existingEvent.EventID,
+                       CreatedAt = DateTime.UtcNow
+                   });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Event Rejected",
+                eventId = existingEvent.EventID
+            });
         }
 
         [Authorize]
         [HttpPut("{id}")]
         [Consumes("multipart/form-data")]
-        public async Task<ActionResult<Event>> UpdateEvent(int id, [FromForm] EventDto _event)
+        public async Task<ActionResult<Event>> UpdateEvent(int id, [FromForm] EventDto _event, [FromServices] IHubContext<NotificationHub> hubContext)
         {
             if(!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -340,7 +354,33 @@ namespace EventManagementServer.Controllers
             existingEvent.EventImage = newFileName;
             existingEvent.CreatedBy = _event.CreatedBy;
 
-            _context.SaveChanges();
+            var users = await _context.Users.ToListAsync();
+            var notifications = new List<Notification>();
+
+            foreach (var user in users)
+            {
+                notifications.Add(new Notification
+                {
+                    UserID = user.UserID,
+                    Message = $"There are some changes of events: {existingEvent.EventName}",
+                    Type = "Info",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            _context.Notifications.AddRange(notifications);
+            await _context.SaveChangesAsync();
+
+            await hubContext.Clients.All.SendAsync(
+                "ReceiveNotification",
+                new {
+                    Title = "New Event",
+                    Message = $"There are some changes of events: {existingEvent.EventName}",
+                    EventId = existingEvent.EventID,
+                    CreatedAt = DateTime.UtcNow
+                });
+
             return Ok();
         }
 

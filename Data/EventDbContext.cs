@@ -14,9 +14,10 @@ namespace EventManagementServer.Data
         public DbSet<Models.Ticket> Tickets { get; set; }
         public DbSet<Models.User> Users { get; set; }
         public DbSet<Models.Role> Roles { get; set; }
-        public DbSet<Models.Comment> Comments { get; set; }
         public DbSet<Models.Category> Categories { get; set; } 
         public DbSet<Models.Notification> Notifications { get; set; }
+        public DbSet<Models.Feedback> Feedbacks { get; set; }
+        public DbSet<Models.Comment> Comments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -40,6 +41,10 @@ namespace EventManagementServer.Data
 
             modelBuilder.Entity<Event>()
                 .Property(e => e.CreatedAt)
+                .HasDefaultValueSql("NOW()");
+
+            modelBuilder.Entity<Feedback>()
+                .Property(f => f.CreatedAt)
                 .HasDefaultValueSql("NOW()");
 
 

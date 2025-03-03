@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace EventManagementServer.Controllers
 {
     [Route("api/[controller]")]
+    [ApiController]
     public class CategoryController : Controller
     {
         private readonly EventDbContext _context;
