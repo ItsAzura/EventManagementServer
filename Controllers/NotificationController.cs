@@ -2,6 +2,7 @@
 using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -17,6 +18,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpGet("/unread")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Notification>>> GetUnreadNotifications()
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
@@ -31,6 +33,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpGet("/read")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Notification>>> GetReadNotifications([FromBody] int notificationId)
         {
             var notification = await _context.Notifications.FindAsync(notificationId);

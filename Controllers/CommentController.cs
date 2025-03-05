@@ -3,6 +3,7 @@ using EventManagementServer.Dto;
 using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -19,12 +20,14 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Comment>>> GetComments()
         {
             return await _context.Comments.ToListAsync();
         }
 
         [HttpGet("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Comment>> GetCommentById(int id)
         {
             var comment = await _context.Comments.FirstOrDefaultAsync(c => c.CommentID == id);
@@ -34,6 +37,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet("user/{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Comment>> GetCommentByUserId(int id)
         {
             var comment = await _context.Comments.FirstOrDefaultAsync(c => c.UserID == id);
@@ -44,6 +48,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet("event/{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Comment>> GetCommentByEventId(int id)
         {
             var comment = await _context.Comments.FirstOrDefaultAsync(c => c.EventID == id);
@@ -55,6 +60,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpPost]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Comment>> CreateComment([FromBody] CommentDto comment)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -80,6 +86,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpPut("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Comment>> UpdateComment(int id, [FromBody] CommentDto comment)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -104,6 +111,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpDelete("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Comment>> DeleteComment(int id)
         {
             var comment = await _context.Comments.FirstOrDefaultAsync(c => c.CommentID == id);

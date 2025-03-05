@@ -3,6 +3,7 @@ using EventManagementServer.Dto;
 using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -20,6 +21,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpGet]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Registration>>> GetRegistrations()
         {
             return await _context.Registrations
@@ -30,6 +32,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpGet("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Registration>> GetRegistration(int id)
         {
             var registration = await _context.Registrations
@@ -44,6 +47,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpPost]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Registration>> CreateRegistration([FromBody] RegistrationDto registrationDto)
         {
             if(!ModelState.IsValid) return BadRequest(ModelState);
@@ -100,6 +104,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpPut("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Registration>> UpdateRegistration(int id, [FromBody] RegistrationDto registrationDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -182,6 +187,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpDelete("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<IActionResult> DeleteRegistration(int id)
         {
             var registration = await _context.Registrations

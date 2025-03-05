@@ -3,6 +3,7 @@ using EventManagementServer.Dto;
 using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -19,12 +20,14 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<EventArea>>> GetEventAreas()
         {
             return await _context.EventAreas.ToListAsync();
         }
 
         [HttpGet("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<EventArea>> GetEventAreaById(int id)
         {
             var eventAreas = await _context.EventAreas
@@ -37,6 +40,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet("event/{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<EventArea>> GetEventAreaByEventId(int id)
         {
             var eventArea = await _context.EventAreas.FirstOrDefaultAsync(ea => ea.EventID == id);
@@ -48,6 +52,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpPost]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<EventArea>> CreateEventArea([FromBody] EventAreaDto eventArea)
         {
             if(!ModelState.IsValid) return BadRequest(ModelState);
@@ -73,6 +78,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpPut("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<EventArea>> UpdateEventArea(int id, [FromBody] EventAreaDto eventArea)
         { 
             var existingEventArea = await _context.EventAreas.FirstOrDefaultAsync(ea => ea.EventAreaID == id);
@@ -98,6 +104,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpDelete("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult> DeleteEventArea(int id)
         {
             var eventArea = await _context.EventAreas

@@ -3,6 +3,7 @@ using EventManagementServer.Dto;
 using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -20,6 +21,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpGet]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<EventCategory>>> GetEventCategories()
         {
             return await _context.EventCategories.ToListAsync();
@@ -27,6 +29,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpGet("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<EventCategory>> GetEventCategoryById(int id)
         {
             var eventCategory = await _context.EventCategories.FirstOrDefaultAsync(ec => ec.EventCategoryID == id);
@@ -38,6 +41,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpPost]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<EventCategory>> CreateEventCategory([FromBody] EventCategoryDto eventCategory)
         { 
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -62,6 +66,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpPut("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<EventCategory>> UpdateEventCategory(int id, [FromBody] EventCategoryDto eventCategory)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -86,6 +91,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpDelete("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult> DeleteEventCategory(int id)
         {
             var eventCategory = await _context.EventCategories

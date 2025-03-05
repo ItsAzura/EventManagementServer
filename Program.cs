@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -55,6 +56,19 @@ builder.Services.AddCors(options =>
     });
 });
 
+//Đăng ký dịch vụ RateLimiter
+builder.Services.AddRateLimiter(
+    //Sử dụng ConcurrencyLimiter 
+    RateLimiterOptions => RateLimiterOptions.AddFixedWindowLimiter("FixedWindowLimiter",
+    options => {
+        options.PermitLimit = 5; //Số lượng request tối đa mà một user có thể thực hiện trong 1 thời điểm
+        options.Window = TimeSpan.FromSeconds(10); //Thời gian giới hạn
+        options.QueueLimit = 10; //Số lượng request tối đa mà một user có thể thực hiện trong 1 khoảng thời gian
+        options.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst; //Xử lý request theo thứ tự cũ nhất trước
+        options.AutoReplenishment = true; //Tự động cung cấp thêm request khi hết hạn
+    }
+ ));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -74,5 +88,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapHub<NotificationHub>("/notificationHub");
+
+app.UseRateLimiter();
 
 app.Run();

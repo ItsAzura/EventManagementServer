@@ -4,6 +4,7 @@ using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 
@@ -22,6 +23,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpGet]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers(int page = 1, int pageSize = 10, int? RoleId = null, string? search = null)
         {
             if(page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
@@ -60,6 +62,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1,2")]
         [HttpGet("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<User>> GetUserById(int id)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserID == id); 
@@ -71,6 +74,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpPost]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<User>> CreateUser([FromBody] UserDto user)
         {
             if(!ModelState.IsValid) return BadRequest(ModelState);
@@ -104,6 +108,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpPut("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<User>> UpdateUser(int id, [FromBody] UpdateUserDto user)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -137,6 +142,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpDelete("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult> DeleteUser(int id)
         {
             var user = await _context.Users.FindAsync(id);

@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Dto;
 using EventManagementServer.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace EventManagementServer.Controllers
 {
@@ -9,6 +10,7 @@ namespace EventManagementServer.Controllers
     public class AuthController(IAuthService authService) : Controller
     {
         [HttpPost("register")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<IActionResult> RegisterAsync(UserDto request)
         {
             var user = await authService.RegisterAsync(request);
@@ -19,6 +21,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<IActionResult> LoginAsync(LoginUserDto request)
         {
             var token = await authService.LoginAsync(request);
@@ -29,6 +32,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpPost("refresh-token")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<IActionResult> RefreshTokensAsync(RefreshTokenRequestDto request)
         {
             var result = await authService.RefreshTokensAsync(request);
@@ -40,6 +44,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpPost("logout")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<IActionResult> Logout(LogoutRequestDto request)
         {
             var success = await authService.LogoutAsync(request.UserId, request.RefreshToken);

@@ -3,6 +3,7 @@ using EventManagementServer.Dto;
 using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventManagementServer.Controllers
@@ -19,6 +20,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategories(int page = 1, int pageSize = 10, string? search = null)
         {
             if(page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
@@ -51,6 +53,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Category>> GetCategoryById(int id)
         {
             var category = await _context.Categories.FirstOrDefaultAsync(c => c.CategoryID == id);
@@ -62,6 +65,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpPost]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Category>> CreateCategory([FromBody] CategoryDto category)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -80,6 +84,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpPut("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Category>> UpdateCategory(int id, [FromBody] CategoryDto category)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -98,6 +103,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpDelete("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Category>> DeleteCategory(int id)
         {
             var category = await _context.Categories.FirstOrDefaultAsync(c => c.CategoryID == id);

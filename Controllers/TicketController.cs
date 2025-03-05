@@ -3,6 +3,7 @@ using EventManagementServer.Dto;
 using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -19,6 +20,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Ticket>>> GetTickets(int page = 1, int pageSize = 10, int? Quantity = null, decimal? Price = null, string? search = null)
         {
             if(page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
@@ -61,6 +63,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Ticket>> GetTicketById(int id)
         {
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
@@ -71,6 +74,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet("eventarea/{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Ticket>> GetTicketByEventAreaId(int id)
         {
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.EventAreaID == id);
@@ -82,6 +86,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpPost]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Ticket>> CreateTicket([FromBody] TicketDto ticket)
         {
             if(!ModelState.IsValid)
@@ -128,6 +133,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpPut("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Ticket>> UpdateCategory(int id, [FromBody] TicketDto ticket)
         {
             var existingTicket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
@@ -156,6 +162,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpDelete("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Ticket>> DeleteTicket(int id)
         {
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);

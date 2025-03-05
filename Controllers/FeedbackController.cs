@@ -4,6 +4,7 @@ using EventManagementServer.Models;
 using EventManagementServer.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -12,6 +13,7 @@ namespace EventManagementServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+
     public class FeedbackController : Controller
     {
         private readonly EventDbContext _context;
@@ -23,6 +25,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpGet("event/{eventId}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Feedback>>  GetFeedBackByEventId (int eventId)
         {
             var feedback = await _context.Feedbacks.FirstOrDefaultAsync(f => f.EventId == eventId);
@@ -34,6 +37,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpPost]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult> CreateFeedback([FromBody] FeedbackDto feedbackDto, [FromServices] IHubContext<NotificationHub> hubContext)
         {
             //Kiểm tra xem user đã đăng nhập chưa

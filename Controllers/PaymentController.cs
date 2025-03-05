@@ -4,6 +4,7 @@ using Stripe;
 using Stripe.Checkout;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace EventManagementServer.Controllers
 {
@@ -22,6 +23,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpPost("create-checkout-session")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         //Tạo checkout session với thông tin sản phẩm và giá trị thanh toán
         public IActionResult CreateCheckoutSession([FromBody] PaymentRequest request)
         {
@@ -62,6 +64,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpPost("webhook")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         //Xử lý webhook từ Stripe
         public async Task<IActionResult> HandleWebhook()
         {

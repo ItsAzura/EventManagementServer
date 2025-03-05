@@ -4,6 +4,7 @@ using EventManagementServer.Models;
 using EventManagementServer.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -21,6 +22,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Event>>> GetEvents(int page = 1, int pageSize = 10, int? categoryId = null, string? search = null)
         {
             if (page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
@@ -66,6 +68,7 @@ namespace EventManagementServer.Controllers
 
 
         [HttpGet("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Event>> GetEventById(int id)
         {
             var _event = await _context.Events
@@ -78,6 +81,7 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpGet("user/{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Event>> GetEventByUserId(int id)
         {
             var _event = await _context.Events
@@ -92,6 +96,7 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpPost]
         [Consumes("multipart/form-data")] //Kiểu request body là form-data 
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Event>> CreateEvent([FromForm] EventDto _event, [FromServices] IHubContext<NotificationHub> hubContext)
         {
             //Kiểm tra xem EventImageFile có tồn tại hay không
@@ -175,6 +180,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpPut("{id}/approve")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult> ApproveEvent(int id, [FromServices] IHubContext<NotificationHub> hubContext)
         {
             var existingEvent = await _context.Events.FirstOrDefaultAsync(e => e.EventID == id);
@@ -252,6 +258,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpPut("{id}/reject")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult> RejectEvent(int id, [FromServices] IHubContext<NotificationHub> hubContext)
         {
             var existingEvent = await _context.Events.FirstOrDefaultAsync(e => e.EventID == id);
@@ -304,6 +311,7 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpPut("{id}")]
         [Consumes("multipart/form-data")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Event>> UpdateEvent(int id, [FromForm] EventDto _event, [FromServices] IHubContext<NotificationHub> hubContext)
         {
             if(!ModelState.IsValid) return BadRequest(ModelState);
@@ -386,6 +394,7 @@ namespace EventManagementServer.Controllers
 
         [Authorize]
         [HttpDelete("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult> DeleteEvent(int id)
         {
             var existingEvent = await _context.Events
