@@ -43,6 +43,17 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 //Đăng ký dịch vụ NotificationHub
 builder.Services.AddSignalR();
 
+//Đăng ký dịch vụ Cors
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("WebApp", policyBuiler =>
+    {
+        policyBuiler.WithOrigins("http://localhost:3000") //domain của web app chưa thay
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 
 var app = builder.Build();
 
@@ -54,6 +65,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+//Sử dụng Cors
+app.UseCors("WebApp");
 
 app.UseAuthorization();
 
