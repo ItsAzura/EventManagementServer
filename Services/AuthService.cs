@@ -11,8 +11,25 @@ using System.Text;
 
 namespace EventManagementServer.Services
 {
-    public class AuthService(EventDbContext context, IConfiguration configuration) : IAuthService
+    public class AuthService : IAuthService
     {
+
+        private readonly EventDbContext context;
+        private readonly IConfiguration configuration;
+        private readonly PasswordHasher<User> passwordHasher;
+        private readonly SigningCredentials credentials;
+
+        public AuthService(EventDbContext context, IConfiguration configuration)
+        {
+            this.context = context;
+            this.configuration = configuration;
+            passwordHasher = new PasswordHasher<User>();
+
+            // Tạo key và credentials một lần duy nhất
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["AppSettings:Token"]));
+            credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
+        }
+
         public async Task<TokenResponseDto?> LoginAsync(LoginUserDto request)
         {
             var user = await context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -20,7 +37,8 @@ namespace EventManagementServer.Services
             if (user == null) return null;
 
             //Kiểm tra password có đúng không?
-            if(new PasswordHasher<User>().VerifyHashedPassword(user, user.PasswordHash, request.PasswordHash) == PasswordVerificationResult.Failed) return null;
+            if(passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.PasswordHash) == PasswordVerificationResult.Failed) 
+                return null;
 
             return await CreateTokenResponse(user);
         }
@@ -44,13 +62,6 @@ namespace EventManagementServer.Services
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Role, user.RoleID.ToString())
             };
-
-            //Tạo key để mã hóa token
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(configuration["AppSettings:Token"]));
-
-            //Tạo chữ ký cho token dựa trên key để giúp xác thực token
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
 
             //Tạo token
             var tokenDescriptor = new JwtSecurityToken(
@@ -88,11 +99,11 @@ namespace EventManagementServer.Services
             //Tạo 1 mảng byte chứa 32 byte ngẫu nhiên
             var randomNumber = new byte[32];
 
-            //Tạo 1 đối tượng RandomNumberGenerator để tạo số ngẫu nhiên
-            using var rng = RandomNumberGenerator.Create();
-
-            //Đổ dữ liệu ngẫu nhiên vào mảng byte
-            rng.GetBytes(randomNumber);
+            //Tạo số ngẫu nhiên
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(randomNumber);
+            }
 
             //Trả về chuỗi base64 của mảng byte
             return Convert.ToBase64String(randomNumber);
@@ -102,10 +113,13 @@ namespace EventManagementServer.Services
         public async Task<TokenResponseDto?> RefreshTokensAsync(RefreshTokenRequestDto request)
         {
             //Kiểm tra refresh token có hợp lệ không?
-            var user  = await ValidateRefreshTokenAsync(request.UserId, request.RefreshToken);
+            var user = await context.Users.FirstOrDefaultAsync(u =>
+                u.UserID == request.UserId &&
+                u.RefreshToken == request.RefreshToken &&
+                u.RefreshTokenExpiryTime >= DateTime.UtcNow);
 
             //Nếu không hợp lệ thì trả về null
-            if(user is null) return null;
+            if (user is null) return null;
 
             //Nếu hợp lệ thì tạo mới token
             return await CreateTokenResponse(user);
@@ -127,22 +141,23 @@ namespace EventManagementServer.Services
 
         public async Task<User?> RegisterAsync(UserDto request)
         {
-            var existingUser = context.Users.FirstOrDefault(u => u.Email == request.Email);
+            bool existingUser = await context.Users.AnyAsync(u => u.Email == request.Email);
 
-            if (existingUser != null) return null;
+            if (existingUser) return null;
 
             var user = new User();
 
-            var hashedPassword = new PasswordHasher<User>()
-                .HashPassword(user, request.PasswordHash);
-
-            var userRole = context.Roles.FirstOrDefault(r => r.RoleName == "User");
-
             user.UserName = request.UserName;
             user.Email = request.Email;
-            user.PasswordHash = hashedPassword;
-            user.RoleID = userRole.RoleID;
 
+            user.PasswordHash = passwordHasher.HashPassword(user, request.PasswordHash);
+
+            var userRole = await context.Roles.FirstOrDefaultAsync(r => r.RoleName == "User");
+
+            if (userRole == null) return null;
+
+            user.RoleID = userRole.RoleID;
+           
             context.Users.Add(user);
             await context.SaveChangesAsync();
 

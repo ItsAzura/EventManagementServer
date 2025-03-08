@@ -52,6 +52,18 @@ namespace EventManagementServer.Controllers
             return Ok(response);
         }
 
+        [HttpGet("top")]
+        [EnableRateLimiting("FixedWindowLimiter")]
+        public async Task<ActionResult<IEnumerable<Category>>> GetTopCategories()
+        {
+            var categories = await _context.Categories
+                .OrderByDescending(c => c.CategoryID)
+                .Take(4)
+                .ToListAsync();
+
+            return Ok(categories);
+        }
+
         [HttpGet("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Category>> GetCategoryById(int id)

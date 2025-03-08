@@ -21,6 +21,33 @@ namespace EventManagementServer.Controllers
             _context = context;
         }
 
+        [HttpGet("images/{imageName}")]
+        public IActionResult GetEventImage(string imageName)
+        {
+            var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "Images", imageName);
+            if (!System.IO.File.Exists(imagePath))
+            {
+                return NotFound();
+            }
+
+            var imageFileStream = System.IO.File.OpenRead(imagePath);
+            return File(imageFileStream, "image/jpeg"); // Điều chỉnh kiểu MIME tùy theo loại ảnh
+        }
+
+
+        [HttpGet("/top6")]
+        [EnableRateLimiting("FixedWindowLimiter")]
+        public async Task<ActionResult<IEnumerable<Event>>> GetTop6Events()
+        {
+            var events = await _context.Events
+                .Where(e => e.EventStatus == "Approved")
+                .OrderByDescending(e => e.EventDate)
+                .Take(6)
+                .ToListAsync();
+
+            return Ok(events);
+        }
+
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Event>>> GetEvents(int page = 1, int pageSize = 10, int? categoryId = null, string? search = null)
