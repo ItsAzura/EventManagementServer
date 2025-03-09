@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
 using EventManagementServer.Models;
+using EventManagementServer.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -13,10 +14,12 @@ namespace EventManagementServer.Controllers
     public class EventCategoryController : Controller
     {
         private readonly EventDbContext _context;
+        private readonly EventCategoryRepository _repository;
 
-        public EventCategoryController(EventDbContext context)
+        public EventCategoryController(EventDbContext context, EventCategoryRepository repository)
         {
             _context = context;
+            _repository = repository;
         }
 
         [Authorize]
@@ -24,7 +27,7 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<EventCategory>>> GetEventCategories()
         {
-            return await _context.EventCategories.ToListAsync();
+            return Ok(await _repository.GetEventCategoriesAsync());
         }
 
         [Authorize]
@@ -32,7 +35,7 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<EventCategory>> GetEventCategoryById(int id)
         {
-            var eventCategory = await _context.EventCategories.FirstOrDefaultAsync(ec => ec.EventCategoryID == id);
+            var eventCategory = await _repository.GetEventCategoryByIdAsync(id);
 
             if (eventCategory == null) return NotFound();
 
@@ -46,20 +49,9 @@ namespace EventManagementServer.Controllers
         { 
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            var newEventCategory = await _repository.CreateEventCategoryAsync(eventCategory, User);
 
-            EventCategory newEventCategory = new EventCategory
-            {
-                EventID = eventCategory.EventID,
-                CategoryID = eventCategory.CategoryID,
-            };
-
-            if (newEventCategory.Event == null || (newEventCategory.Event.CreatedBy.ToString() != userId && userRole != "1"))
-                return Forbid();
-
-            _context.EventCategories.Add(newEventCategory);
-            await _context.SaveChangesAsync();
+            if (newEventCategory == null) return Forbid();
 
             return CreatedAtAction(nameof(GetEventCategoryById), new { id = newEventCategory.EventCategoryID }, newEventCategory);
         }
@@ -71,22 +63,11 @@ namespace EventManagementServer.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var existingEventCategory = await _context.EventCategories.FirstOrDefaultAsync(ec => ec.EventCategoryID == id);
+            var updatedEventCategory = await _repository.UpdateEventCategoryAsync(id, eventCategory, User);
 
-            if (existingEventCategory == null) return NotFound();
+            if (updatedEventCategory == null) return NotFound();
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            if (existingEventCategory.Event == null || (existingEventCategory.Event.CreatedBy.ToString() != userId && userRole != "1"))
-                return Forbid();
-
-            existingEventCategory.EventID = eventCategory.EventID;
-            existingEventCategory.CategoryID = eventCategory.CategoryID;
-
-            await _context.SaveChangesAsync();
-
-            return Ok(existingEventCategory);
+            return Ok(updatedEventCategory);
         }
 
         [Authorize]
@@ -94,20 +75,9 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult> DeleteEventCategory(int id)
         {
-            var eventCategory = await _context.EventCategories
-                .Include(ec => ec.Event)
-                .FirstOrDefaultAsync(ec => ec.EventCategoryID == id);
+            var success = await _repository.DeleteEventCategoryAsync(id, User);
 
-            if (eventCategory == null) return NotFound();
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            if (eventCategory.Event?.CreatedBy.ToString() != userId && userRole != "1")
-                return Forbid();
-
-            _context.EventCategories.Remove(eventCategory);
-            await _context.SaveChangesAsync();
+            if (!success) return Forbid();
 
             return NoContent();
         }

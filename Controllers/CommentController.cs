@@ -13,12 +13,10 @@ namespace EventManagementServer.Controllers
     [Route("api/[controller]")]
     public class CommentController : Controller
     {
-        private readonly EventDbContext _context;
         private readonly CommentRepository _repository;
 
-        public CommentController(EventDbContext context, CommentRepository repository)
+        public CommentController(CommentRepository repository)
         {
-            _context = context;
             _repository = repository;
         }
 

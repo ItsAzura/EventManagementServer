@@ -46,6 +46,15 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 //Đăng ký dịch vụ CategoryRepository
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 
+//Đăng ký dịch vụ CommentRepository
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+
+//Đăng ký dịch vụ EventRepository
+builder.Services.AddScoped<IEventAreaRepository, EventAreaRepository>();
+
+//Đăng ký dịch vụ EventCategoryRepository
+builder.Services.AddScoped<IEventCategoryRepository, EventCategoryRepository>();
+
 //Đăng ký dịch vụ NotificationHub
 builder.Services.AddSignalR();
 

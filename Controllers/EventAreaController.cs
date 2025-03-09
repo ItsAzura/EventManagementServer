@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
 using EventManagementServer.Models;
+using EventManagementServer.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -13,37 +14,36 @@ namespace EventManagementServer.Controllers
     public class EventAreaController : Controller
     {
         private readonly EventDbContext _context;
+        private readonly EventAreaRepository _repository;
 
-        public EventAreaController(EventDbContext context)
+        public EventAreaController(EventDbContext context, EventAreaRepository repository)
         {
             _context = context;
+            _repository = repository;
         }
 
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<EventArea>>> GetEventAreas()
         {
-            return await _context.EventAreas.ToListAsync();
+            return Ok(await _repository.GetEventAreasAsync());
         }
 
         [HttpGet("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<EventArea>> GetEventAreaById(int id)
         {
-            var eventAreas = await _context.EventAreas
-                .Where(ea => ea.EventID == id)
-                .ToListAsync();
+            var eventArea = await _repository.GetEventAreaByIdAsync(id);
+            if(eventArea == null) return NotFound();
 
-            if (!eventAreas.Any()) return NotFound();
-
-            return Ok(eventAreas);
+            return Ok(eventArea);
         }
 
         [HttpGet("event/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<EventArea>> GetEventAreaByEventId(int id)
         {
-            var eventArea = await _context.EventAreas.FirstOrDefaultAsync(ea => ea.EventID == id);
+            var eventArea = await _repository.GetEventAreaByEventIdAsync(id);
 
             if (eventArea == null) return NotFound();
 
@@ -57,21 +57,8 @@ namespace EventManagementServer.Controllers
         {
             if(!ModelState.IsValid) return BadRequest(ModelState);
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            EventArea newEventArea = new EventArea
-            {
-                EventID = eventArea.EventID,
-                AreaName = eventArea.AreaName,
-                Capacity = eventArea.Capacity,
-            };
-
-            if (newEventArea?.Event == null || (newEventArea.Event.CreatedBy.ToString() != userId && userRole != "1"))
-                return Forbid();
-
-            _context.EventAreas.Add(newEventArea);
-            await _context.SaveChangesAsync();
+            var newEventArea = await _repository.CreateEventAreaAsync(eventArea, User);
+            if (newEventArea == null) return Forbid();
 
             return CreatedAtAction(nameof(GetEventAreaById), new { id = newEventArea.EventAreaID }, newEventArea);
         }
@@ -80,26 +67,13 @@ namespace EventManagementServer.Controllers
         [HttpPut("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<EventArea>> UpdateEventArea(int id, [FromBody] EventAreaDto eventArea)
-        { 
-            var existingEventArea = await _context.EventAreas.FirstOrDefaultAsync(ea => ea.EventAreaID == id);
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            if (existingEventArea == null) return NotFound();
+            var updatedEventArea = await _repository.UpdateEventAreaAsync(id, eventArea, User);
+            if (updatedEventArea == null) return Forbid();
 
-            if(!ModelState.IsValid) return BadRequest(ModelState);
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            if (existingEventArea?.Event == null || (existingEventArea.Event.CreatedBy.ToString() != userId && userRole != "1"))
-                return Forbid();
-
-
-            existingEventArea.EventID = eventArea.EventID;
-            existingEventArea.AreaName = eventArea.AreaName;
-            existingEventArea.Capacity = eventArea.Capacity;
-
-            await _context.SaveChangesAsync();
-            return Ok(existingEventArea);
+            return Ok(updatedEventArea);
         }
 
         [Authorize]
@@ -107,22 +81,11 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult> DeleteEventArea(int id)
         {
-            var eventArea = await _context.EventAreas
-                .Include(e => e.Event)
-                .FirstOrDefaultAsync(ea => ea.EventAreaID == id);
+            var success = await _repository.DeleteEventAreaAsync(id, User);
 
-            if (eventArea == null) return NotFound();
+            if (!success) return Forbid();
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            if (eventArea.Event?.CreatedBy.ToString() != userId && userRole != "1")
-                return Forbid();
-
-            _context.EventAreas.Remove(eventArea);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return Ok();
         }
     }
 }
