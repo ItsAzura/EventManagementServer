@@ -1,4 +1,6 @@
 ﻿using EventManagementServer.Data;
+using EventManagementServer.Interface;
+using EventManagementServer.Repositories;
 using EventManagementServer.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
@@ -40,6 +42,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 //Đăng ký dịch vụ AuthService
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+//Đăng ký dịch vụ CategoryRepository
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 
 //Đăng ký dịch vụ NotificationHub
 builder.Services.AddSignalR();

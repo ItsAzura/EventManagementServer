@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
 using EventManagementServer.Models;
+using EventManagementServer.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -13,24 +14,26 @@ namespace EventManagementServer.Controllers
     public class CommentController : Controller
     {
         private readonly EventDbContext _context;
+        private readonly CommentRepository _repository;
 
-        public CommentController(EventDbContext context)
+        public CommentController(EventDbContext context, CommentRepository repository)
         {
             _context = context;
+            _repository = repository;
         }
 
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Comment>>> GetComments()
         {
-            return await _context.Comments.ToListAsync();
+            return Ok(await _repository.GetCommentsAsync());
         }
 
         [HttpGet("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Comment>> GetCommentById(int id)
         {
-            var comment = await _context.Comments.FirstOrDefaultAsync(c => c.CommentID == id);
+            var comment = await _repository.GetCommentByIdAsync(id);
 
             if (comment == null) return NotFound();
             return Ok(comment);
@@ -40,7 +43,7 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Comment>> GetCommentByUserId(int id)
         {
-            var comment = await _context.Comments.FirstOrDefaultAsync(c => c.UserID == id);
+            var comment = await _repository.GetCommentByUserIdAsync(id);
 
             if (comment == null) return NotFound();
 
@@ -51,7 +54,7 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Comment>> GetCommentByEventId(int id)
         {
-            var comment = await _context.Comments.FirstOrDefaultAsync(c => c.EventID == id);
+            var comment = await _repository.GetCommentByEventIdAsync(id);
 
             if (comment == null) return NotFound();
 
@@ -65,21 +68,9 @@ namespace EventManagementServer.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            var newComment = await _repository.CreateCommentAsync(comment, User);
 
-            if (comment == null || comment.UserID.ToString() != userId && userRole != "1") 
-                return Forbid();
-
-            Comment newComment = new Comment
-            {
-                EventID = comment.EventID,
-                UserID = comment.UserID,
-                Content = comment.Content,
-            };
-
-            _context.Comments.Add(newComment);
-            await _context.SaveChangesAsync();
+            if (newComment == null) return Forbid();
 
             return CreatedAtAction(nameof(GetCommentById), new { id = newComment.CommentID }, newComment);
         }
@@ -91,22 +82,10 @@ namespace EventManagementServer.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var existingComment = await _context.Comments.FirstOrDefaultAsync(c => c.CommentID == id);
+            var updatedComment = await _repository.UpdateCommentAsync(id, comment, User);
+            if (updatedComment == null) return Forbid();
 
-            if (existingComment == null) return NotFound();
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            if (existingComment.UserID.ToString() != userId && userRole != "1") return Forbid();
-
-            existingComment.EventID = comment.EventID;
-            existingComment.UserID = comment.UserID;
-            existingComment.Content = comment.Content;
-
-            await _context.SaveChangesAsync();
-
-            return Ok(existingComment);
+            return Ok(updatedComment);
         }
 
         [Authorize]
@@ -114,22 +93,11 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Comment>> DeleteComment(int id)
         {
-            var comment = await _context.Comments.FirstOrDefaultAsync(c => c.CommentID == id);
+            var success = await _repository.DeleteCommentAsync(id, User);
+            
+            if(!success) return Forbid();
 
-            if (comment == null) return NotFound();
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            if (comment.UserID.ToString() == userId && userRole == "1")
-            {
-                _context.Comments.Remove(comment);
-                await _context.SaveChangesAsync();
-
-                return Ok(comment);
-            }
-
-            return Forbid();
+            return Ok();
 
 
         }

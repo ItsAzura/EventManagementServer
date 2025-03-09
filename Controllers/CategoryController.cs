@@ -1,45 +1,32 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
+using EventManagementServer.Interface;
 using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 
 namespace EventManagementServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class CategoryController : Controller
+    public class CategoryController : ControllerBase
     {
-        private readonly EventDbContext _context;
+        private readonly ICategoryRepository _categoryRepository;
 
-        public CategoryController(EventDbContext context)
+        public CategoryController(ICategoryRepository categoryRepository)
         {
-            _context = context;
+            _categoryRepository = categoryRepository;
         }
 
+        //Phương thức GetCategories trả về danh sách các Category theo trang và kích thước trang
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategories(int page = 1, int pageSize = 10, string? search = null)
         {
-            if(page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
+            var categories = await _categoryRepository.GetCategoriesAsync(page, pageSize, search);
 
-            var query = _context.Categories.AsQueryable();
-
-            if(!string.IsNullOrEmpty(search))
-            {
-                query = query.Where(c => c.CategoryName.Contains(search));
-            }
-
-            var totalCount = await query.CountAsync();
-
-            var categories = await query
-                .OrderBy(c => c.CategoryID)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
+            var totalCount = categories.Count();
             var response = new
             {
                 TotalCount = totalCount,
@@ -52,81 +39,67 @@ namespace EventManagementServer.Controllers
             return Ok(response);
         }
 
+        //Phương thức GetTopCategories trả về 4 Category mới nhất
         [HttpGet("top")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Category>>> GetTopCategories()
         {
-            var categories = await _context.Categories
-                .OrderByDescending(c => c.CategoryID)
-                .Take(4)
-                .ToListAsync();
-
-            return Ok(categories);
+            return Ok(await _categoryRepository.GetTopCategoriesAsync());
         }
 
+        //Phương thức GetCategoryById trả về Category theo ID
         [HttpGet("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Category>> GetCategoryById(int id)
         {
-            var category = await _context.Categories.FirstOrDefaultAsync(c => c.CategoryID == id);
-
-            if (category == null) return NotFound();
-
-            return Ok(category);
+            var category = await _categoryRepository.GetCategoryByIdAsync(id);
+            return category == null ? NotFound() : Ok(category);
         }
 
+        //Phương thức CreateCategory tạo mới một Category
         [Authorize(Roles = "1")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowLimiter")]
-        public async Task<ActionResult<Category>> CreateCategory([FromBody] CategoryDto category)
+        public async Task<ActionResult<Category>> CreateCategory([FromBody] CategoryDto categoryDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            Category newCategory = new Category
+            var newCategory = new Category
             {
-                CategoryName = category.CategoryName,
-                CategoryDescription = category.CategoryDescription,
+                CategoryName = categoryDto.CategoryName,
+                CategoryDescription = categoryDto.CategoryDescription,
             };
 
-            _context.Categories.Add(newCategory);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetCategoryById), new { id = newCategory.CategoryID }, newCategory);
+            var createdCategory = await _categoryRepository.CreateCategoryAsync(newCategory);
+            return CreatedAtAction(nameof(GetCategoryById), new { id = createdCategory.CategoryID }, createdCategory);
         }
 
+        //Phương thức UpdateCategory cập nhật thông tin Category
         [Authorize(Roles = "1")]
         [HttpPut("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
-        public async Task<ActionResult<Category>> UpdateCategory(int id, [FromBody] CategoryDto category)
+        public async Task<ActionResult<Category>> UpdateCategory(int id, [FromBody] CategoryDto categoryDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var existingCategory = await _context.Categories.FirstOrDefaultAsync(c => c.CategoryID == id);
+            var category = new Category
+            {
+                CategoryName = categoryDto.CategoryName,
+                CategoryDescription = categoryDto.CategoryDescription
+            };
 
-            if (existingCategory == null) return NotFound();
-
-            existingCategory.CategoryName = category.CategoryName;
-            existingCategory.CategoryDescription = category.CategoryDescription;
-
-            await _context.SaveChangesAsync();
-
-            return Ok(existingCategory);
+            var updatedCategory = await _categoryRepository.UpdateCategoryAsync(id, category);
+            return updatedCategory == null ? NotFound() : Ok(updatedCategory);
         }
 
+        //Phương thức DeleteCategory xóa Category
         [Authorize(Roles = "1")]
         [HttpDelete("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Category>> DeleteCategory(int id)
         {
-            var category = await _context.Categories.FirstOrDefaultAsync(c => c.CategoryID == id);
-
-            if (category == null) return NotFound();
-
-            _context.Categories.Remove(category);
-            await _context.SaveChangesAsync();
-
-            return Ok(category);
+            var deletedCategory = await _categoryRepository.DeleteCategoryAsync(id);
+            return deletedCategory == null ? NotFound() : Ok(deletedCategory);
         }
-        
     }
 }
