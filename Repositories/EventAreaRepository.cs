@@ -55,14 +55,16 @@ namespace EventManagementServer.Repositories
             return true;
         }
 
-        public async Task<EventArea?> GetEventAreaByEventIdAsync(int id)
+        public async Task<IEnumerable<EventArea>> GetEventAreaByEventIdAsync(int id)
         {
             return await _context.EventAreas
-                .FirstOrDefaultAsync(e => e.EventID == id);
+               .Where(e => e.EventID == id)
+               .ToListAsync();
         }
 
-        public async Task<EventArea?> GetEventAreaByIdAsync(int id)
+        public async Task<EventArea> GetEventAreaByIdAsync(int id)
         {
+           
             return await _context.EventAreas
                 .FirstOrDefaultAsync(e => e.EventAreaID == id);
         }

@@ -19,6 +19,13 @@ namespace EventManagementServer.Controllers
             _categoryRepository = categoryRepository;
         }
 
+        [HttpGet("all")]
+        [EnableRateLimiting("FixedWindowLimiter")]
+        public async Task<ActionResult<IEnumerable<Category>>> GetAllCategories()
+        {
+            return Ok(await _categoryRepository.GetAllCategoryAsync());
+        }
+
         //Phương thức GetCategories trả về danh sách các Category theo trang và kích thước trang
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]

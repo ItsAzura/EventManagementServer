@@ -5,6 +5,7 @@ namespace EventManagementServer.Interface
     //Xác định các phương thức cần thiết cho CategoryRepository
     public interface ICategoryRepository
     {
+        Task<IEnumerable<Category>> GetAllCategoryAsync();
         Task<IEnumerable<Category>> GetCategoriesAsync(int page, int pageSize, string? search);
         Task<IEnumerable<Category>> GetTopCategoriesAsync();
         Task<Category?> GetCategoryByIdAsync(int id);

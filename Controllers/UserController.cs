@@ -14,11 +14,13 @@ namespace EventManagementServer.Controllers
     public class UserController : Controller
     {
         private readonly EventDbContext _context;
-        private readonly IConfiguration configuration;
+        private readonly IConfiguration _configuration;
 
-        public UserController(EventDbContext context)
+        public UserController(EventDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+
         }
 
         [Authorize(Roles = "1")]
@@ -43,7 +45,7 @@ namespace EventManagementServer.Controllers
             var totalCount = await query.CountAsync();
 
             var users = await query
-                .OrderBy(u => u.UserID)
+                .OrderByDescending(u => u.UserID)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -95,7 +97,7 @@ namespace EventManagementServer.Controllers
             {
                 UserName = user.UserName,
                 Email = user.Email,
-                RoleID = configuration.GetValue<int>("User"),
+                RoleID = _configuration.GetValue<int>("User"),
                 PasswordHash = hashPassword
             };
 
@@ -149,10 +151,38 @@ namespace EventManagementServer.Controllers
 
             if(user == null) return NotFound();
 
+            if(user.RoleID == '1')
+            {
+                return BadRequest("Cannot delete an admin user");
+            }
+
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok();
+        }
+
+        [Authorize(Roles = "1")]
+        [HttpPatch("ChangeRole/{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
+        public async Task<ActionResult> ChangeRole(string role, int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+
+            if (user == null) return NotFound();
+
+            user.RoleID = role switch
+            {
+                "Admin" => 1,
+                "User" => 2,
+                _ => 2
+            };
+
+            _context.Entry(user).State = EntityState.Modified;
+
+            await _context.SaveChangesAsync();
+
+            return Ok();
         }
     }
 }

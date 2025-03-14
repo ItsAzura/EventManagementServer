@@ -18,6 +18,7 @@ namespace EventManagementServer.Data
         public DbSet<Models.Notification> Notifications { get; set; }
         public DbSet<Models.Feedback> Feedbacks { get; set; }
         public DbSet<Models.Comment> Comments { get; set; }
+        public DbSet<Contact> Contacts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

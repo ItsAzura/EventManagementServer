@@ -1,5 +1,6 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
+using EventManagementServer.Interface;
 using EventManagementServer.Models;
 using EventManagementServer.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -13,12 +14,10 @@ namespace EventManagementServer.Controllers
     [Route("api/[controller]")]
     public class EventAreaController : Controller
     {
-        private readonly EventDbContext _context;
-        private readonly EventAreaRepository _repository;
+        private readonly IEventAreaRepository _repository;
 
-        public EventAreaController(EventDbContext context, EventAreaRepository repository)
+        public EventAreaController( IEventAreaRepository repository)
         {
-            _context = context;
             _repository = repository;
         }
 
@@ -41,7 +40,7 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("event/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
-        public async Task<ActionResult<EventArea>> GetEventAreaByEventId(int id)
+        public async Task<ActionResult<IEnumerable<EventArea>>> GetEventAreaByEventId(int id)
         {
             var eventArea = await _repository.GetEventAreaByEventIdAsync(id);
 

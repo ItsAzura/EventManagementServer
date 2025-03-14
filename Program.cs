@@ -83,6 +83,11 @@ builder.Services.AddRateLimiter(
     }
  ));
 
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+
+//Đăng ký dịch vụ EmailService
+builder.Services.AddSingleton<EmailService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

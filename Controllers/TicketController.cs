@@ -75,9 +75,11 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("eventarea/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
-        public async Task<ActionResult<Ticket>> GetTicketByEventAreaId(int id)
+        public async Task<ActionResult<IEnumerable<EventArea>>> GetTicketByEventAreaId(int id)
         {
-            var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.EventAreaID == id);
+            var ticket = await _context.Tickets
+                .Where(t => t.EventAreaID == id)
+                .ToListAsync();
 
             if (ticket == null) return NotFound();
 

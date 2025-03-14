@@ -13,6 +13,10 @@ namespace EventManagementServer.Repositories
         {
             _context = context;
         }
+        public async Task<IEnumerable<Category>> GetAllCategoryAsync()
+        {
+            return await _context.Categories.ToListAsync();
+        }
 
         //Phương thức GetCategoriesAsync trả về danh sách các Category theo trang và kích thước trang
         public async Task<IEnumerable<Category>> GetCategoriesAsync(int page, int pageSize, string? search)
