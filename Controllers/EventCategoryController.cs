@@ -1,5 +1,6 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
+using EventManagementServer.Interface;
 using EventManagementServer.Models;
 using EventManagementServer.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -14,9 +15,9 @@ namespace EventManagementServer.Controllers
     public class EventCategoryController : Controller
     {
         private readonly EventDbContext _context;
-        private readonly EventCategoryRepository _repository;
+        private readonly IEventCategoryRepository _repository;
 
-        public EventCategoryController(EventDbContext context, EventCategoryRepository repository)
+        public EventCategoryController(EventDbContext context, IEventCategoryRepository repository)
         {
             _context = context;
             _repository = repository;

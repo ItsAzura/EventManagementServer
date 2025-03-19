@@ -26,8 +26,7 @@ namespace EventManagementServer.Repositories
                 CategoryID = eventCategory.CategoryID,
             };
 
-            if (newEventCategory.Event == null || (newEventCategory.Event.CreatedBy.ToString() != userId && userRole != "1"))
-                return null;
+            //if (newEventCategory.Event == null || (newEventCategory.Event.CreatedBy.ToString() != userId && userRole != "1")) return null;
 
             _context.EventCategories.Add(newEventCategory);
             await _context.SaveChangesAsync();
@@ -55,24 +54,45 @@ namespace EventManagementServer.Repositories
             return true;
         }
 
-        public Task<IEnumerable<EventCategory>> GetEventCategoriesAsync()
+        public async Task<IEnumerable<EventCategory>> GetEventCategoriesAsync()
         {
-            throw new NotImplementedException();
+            return await _context.EventCategories.ToListAsync();
         }
 
-        public Task<EventCategory?> GetEventCategoryByEventIdAsync(int id)
+        public async Task<EventCategory?> GetEventCategoryByEventIdAsync(int id)
         {
-            throw new NotImplementedException();
+            return await _context.EventCategories
+                .Include(ec => ec.Event)
+                .Include(ec => ec.Category)
+                .FirstOrDefaultAsync(ec => ec.EventID == id);
         }
 
-        public Task<EventCategory?> GetEventCategoryByIdAsync(int id)
+        public async Task<EventCategory?> GetEventCategoryByIdAsync(int id)
         {
-            throw new NotImplementedException();
+            return await _context.EventCategories
+                .Include(ec => ec.Event)
+                .Include(ec => ec.Category)
+                .FirstOrDefaultAsync(ec => ec.EventCategoryID == id);
         }
 
-        public Task<EventCategory> UpdateEventCategoryAsync(int id, EventCategoryDto eventCategory, ClaimsPrincipal user)
+        public async Task<EventCategory> UpdateEventCategoryAsync(int id, EventCategoryDto eventCategory, ClaimsPrincipal user)
         {
-            throw new NotImplementedException();
+            var existingEventCategory = await _context.EventCategories.FirstOrDefaultAsync(ec => ec.EventCategoryID == id);
+
+            if (existingEventCategory == null) return null;
+
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = user.FindFirst(ClaimTypes.Role)?.Value;
+
+            //var eventByEventCategory = await _context.Events.FirstOrDefaultAsync(e => e.EventID == eventCategory.EventID);
+
+            //if (eventByEventCategory?.Creator?.UserID.ToString() != userId && userRole != "1") return null;
+
+            existingEventCategory.EventID = eventCategory.EventID;
+            existingEventCategory.CategoryID = eventCategory.CategoryID;
+
+            await _context.SaveChangesAsync();
+            return existingEventCategory;
         }
     }
 }

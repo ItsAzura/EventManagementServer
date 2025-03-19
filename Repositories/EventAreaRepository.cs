@@ -16,24 +16,45 @@ namespace EventManagementServer.Repositories
         }
         public async Task<EventArea> CreateEventAreaAsync(EventAreaDto eventArea, ClaimsPrincipal user)
         {
-            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = user.FindFirst(ClaimTypes.Role)?.Value;
-
-            if (eventArea == null || eventArea.EventID.ToString() != userId && userRole != "1")
+            if (eventArea == null)
                 return null;
 
-            EventArea newEventArea = new EventArea
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = user.FindFirst(ClaimTypes.Role)?.Value;
+
+            var eventByEventArea = await _context.Events.FirstOrDefaultAsync(
+                e => e.EventID == eventArea.EventID
+                );
+
+            if (!int.TryParse(userIdClaim, out int userId))
+                return null; // Trả về null nếu userId không hợp lệ
+
+            int userIdInt = Convert.ToInt32(userId);
+            if (eventByEventArea.CreatedBy != userId && userRole != "1")
+                return null; // Chỉ chủ sự kiện hoặc admin mới có quyền
+
+            try
             {
-                EventID = eventArea.EventID,
-                AreaName = eventArea.AreaName,
-                Capacity = eventArea.Capacity,
-            };
+                EventArea newEventArea = new EventArea
+                {
+                    EventID = eventArea.EventID,
+                    AreaName = eventArea.AreaName,
+                    Capacity = eventArea.Capacity,
+                };
 
-            _context.EventAreas.Add(newEventArea);
-            await _context.SaveChangesAsync();
+                _context.EventAreas.Add(newEventArea);
+                await _context.SaveChangesAsync();
 
-            return newEventArea;
+                return newEventArea;
+            }
+            catch (Exception ex)
+            {
+                // Ghi log lỗi để debug
+                Console.WriteLine($"Error creating event area: {ex.Message}");
+                return null;
+            }
         }
+
 
         public async Task<bool> DeleteEventAreaAsync(int id, ClaimsPrincipal user)
         {
@@ -82,10 +103,10 @@ namespace EventManagementServer.Repositories
             var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var userRole = user.FindFirst(ClaimTypes.Role)?.Value;
 
-            if (existingEventArea.Event.CreatedBy.ToString() != userId && userRole != "1")
-                return null;
+            var eventByEventArea = await _context.Events.FirstOrDefaultAsync(e => e.EventID == existingEventArea.EventID);
 
-            existingEventArea.EventID = eventArea.EventID;
+            if (eventByEventArea.CreatedBy.ToString() != userId && userRole != "1") return null;
+
             existingEventArea.AreaName = eventArea.AreaName;
             existingEventArea.Capacity = eventArea.Capacity;
 

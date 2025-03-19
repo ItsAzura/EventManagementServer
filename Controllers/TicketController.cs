@@ -86,7 +86,7 @@ namespace EventManagementServer.Controllers
             return Ok(ticket);
         }
 
-        [Authorize]
+        [Authorize(Roles = "1,2")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Ticket>> CreateTicket([FromBody] TicketDto ticket)
@@ -100,6 +100,7 @@ namespace EventManagementServer.Controllers
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
             var eventArea = await _context.EventAreas.FirstOrDefaultAsync(e => e.EventAreaID == ticket.EventAreaID);
+            var eventByeventArea = await _context.Events.FirstOrDefaultAsync(e => e.EventID == eventArea.EventID);
 
             if (eventArea == null)
             {
@@ -124,7 +125,7 @@ namespace EventManagementServer.Controllers
                 Price = ticket.Price,
             };
 
-            if (newTicket == null || (newTicket.EventArea?.Event?.CreatedBy.ToString() != userId && userRole != "1"))
+            if (newTicket == null || (eventByeventArea.CreatedBy.ToString() != userId && userRole != "1"))
                 return Forbid();
 
             _context.Tickets.Add(newTicket);
@@ -133,7 +134,7 @@ namespace EventManagementServer.Controllers
             return CreatedAtAction(nameof(GetTicketById), new { id = newTicket.TicketID }, newTicket);
         }
 
-        [Authorize]
+        [Authorize(Roles = "1,2")]
         [HttpPut("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Ticket>> UpdateCategory(int id, [FromBody] TicketDto ticket)
@@ -145,24 +146,27 @@ namespace EventManagementServer.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if (existingTicket.EventArea?.Event?.CreatedBy.ToString() != userId && userRole != "1")
+            var eventArea = await _context.EventAreas.FirstOrDefaultAsync(e => e.EventAreaID == existingTicket.EventAreaID);
+            var eventByeventArea = await _context.Events.FirstOrDefaultAsync(e => e.EventID == eventArea.EventID);
+
+            if(eventByeventArea == null) return NotFound();
+
+            if (eventByeventArea?.CreatedBy.ToString() != userId && userRole != "1")
                 return Forbid();
 
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            existingTicket.EventAreaID = ticket.EventAreaID;
             existingTicket.TicketName = ticket.TicketName;
             existingTicket.Description = ticket.Description;
             existingTicket.Quantity = ticket.Quantity;
             existingTicket.Price = ticket.Price;
-            existingTicket.Status = ticket.Status;
 
             await _context.SaveChangesAsync();
 
             return Ok(existingTicket);
         }
 
-        [Authorize]
+        [Authorize(Roles = "1,2")]
         [HttpDelete("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Ticket>> DeleteTicket(int id)
@@ -174,10 +178,63 @@ namespace EventManagementServer.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if (ticket.EventArea?.Event?.CreatedBy.ToString() != userId && userRole != "1")
+            var eventArea = await _context.EventAreas.FirstOrDefaultAsync(e => e.EventAreaID == ticket.EventAreaID);
+            var eventByeventArea = await _context.Events.FirstOrDefaultAsync(e => e.EventID == eventArea.EventID);
+
+            if (eventByeventArea.CreatedBy.ToString() != userId && userRole != "1")
                 return Forbid();
 
             _context.Tickets.Remove(ticket);
+            await _context.SaveChangesAsync();
+
+            return Ok(ticket);
+        }
+
+        [Authorize(Roles = "1,2")]
+        [HttpPut("active/{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
+        public async Task<ActionResult<Ticket>> ActivateTicket(int id)
+        {
+            var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
+
+            if (ticket == null) return NotFound();
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            var eventArea = await _context.EventAreas.FirstOrDefaultAsync(e => e.EventAreaID == ticket.EventAreaID);
+            var eventByeventArea = await _context.Events.FirstOrDefaultAsync(e => e.EventID == eventArea.EventID);
+
+            if (eventByeventArea.CreatedBy.ToString() != userId && userRole != "1")
+                return Forbid();
+
+            ticket.Status = "Available";
+
+            await _context.SaveChangesAsync();
+
+            return Ok(ticket);
+        }
+
+        [Authorize(Roles = "1,2")]
+        [HttpPut("unactive/{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
+        public async Task<ActionResult<Ticket>> DeactivateTicket(int id)
+        {
+            var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
+
+            if (ticket == null) return NotFound();
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            var eventArea = await _context.EventAreas.FirstOrDefaultAsync(e => e.EventAreaID == ticket.EventAreaID);
+            var eventByeventArea = await _context.Events.FirstOrDefaultAsync(e => e.EventID == eventArea.EventID);
+
+            if (eventByeventArea.CreatedBy.ToString() != userId && userRole != "1")
+                return Forbid();
+
+            ticket.Status = "Unavailable";
+
             await _context.SaveChangesAsync();
 
             return Ok(ticket);

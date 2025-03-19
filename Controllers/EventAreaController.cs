@@ -49,7 +49,7 @@ namespace EventManagementServer.Controllers
             return Ok(eventArea);
         }
 
-        [Authorize]
+        [Authorize(Roles = "1,2")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<EventArea>> CreateEventArea([FromBody] EventAreaDto eventArea)
@@ -62,7 +62,6 @@ namespace EventManagementServer.Controllers
             return CreatedAtAction(nameof(GetEventAreaById), new { id = newEventArea.EventAreaID }, newEventArea);
         }
 
-        [Authorize]
         [HttpPut("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<EventArea>> UpdateEventArea(int id, [FromBody] EventAreaDto eventArea)
@@ -75,7 +74,7 @@ namespace EventManagementServer.Controllers
             return Ok(updatedEventArea);
         }
 
-        [Authorize]
+        [Authorize(Roles = "1,2")]
         [HttpDelete("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult> DeleteEventArea(int id)

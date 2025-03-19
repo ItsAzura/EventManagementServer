@@ -4,7 +4,6 @@ namespace EventManagementServer.Dto
 {
     public class EventAreaDto
     {
-        [Required]
         public int EventID { get; set; }
 
         [Required, MaxLength(100)]

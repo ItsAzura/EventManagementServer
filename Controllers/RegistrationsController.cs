@@ -19,7 +19,7 @@ namespace EventManagementServer.Controllers
             _context = context;
         }
 
-        [Authorize]
+        [Authorize(Roles = "1,2")]
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Registration>>> GetRegistrations()
@@ -30,7 +30,7 @@ namespace EventManagementServer.Controllers
                 .ToListAsync();
         }
 
-        [Authorize]
+        [Authorize(Roles = "1,2")]
         [HttpGet("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Registration>> GetRegistration(int id)
@@ -45,7 +45,7 @@ namespace EventManagementServer.Controllers
             return Ok(registration);
         }
 
-        [Authorize]
+        [Authorize(Roles = "1,2")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Registration>> CreateRegistration([FromBody] RegistrationDto registrationDto)
@@ -102,7 +102,7 @@ namespace EventManagementServer.Controllers
 
         }
 
-        [Authorize]
+        [Authorize(Roles = "1,2")]
         [HttpPut("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Registration>> UpdateRegistration(int id, [FromBody] RegistrationDto registrationDto)
@@ -185,7 +185,7 @@ namespace EventManagementServer.Controllers
             return Ok(registration);
         }
 
-        [Authorize]
+        [Authorize(Roles = "1,2")]
         [HttpDelete("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<IActionResult> DeleteRegistration(int id)

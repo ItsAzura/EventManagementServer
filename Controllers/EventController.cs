@@ -54,31 +54,31 @@ namespace EventManagementServer.Controllers
         {
             if (page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
 
-            // Query cơ bản
-            var query = _context.Events.AsQueryable();
+            var query = _context.Events
+                .Where(e => e.EventStatus == "Approved") // Lọc theo trạng thái trước
+                .AsQueryable();
 
             // Lọc theo Category nếu có
             if (categoryId.HasValue)
             {
-                query = query.Where(e => _context.EventCategories // Lọc theo EventCategory
-                    .Where(ec => ec.CategoryID == categoryId.Value) // Lọc theo CategoryID
-                    .Select(ec => ec.EventID) // Lấy ra EventID
-                    .Contains(e.EventID)); // Kiểm tra EventID có nằm trong danh sách EventID của Category không
+                query = from e in query
+                        join ec in _context.EventCategories on e.EventID equals ec.EventID
+                        where ec.CategoryID == categoryId.Value
+                        select e;
             }
 
-            //Tìm theo title nếu có
-            if(!string.IsNullOrEmpty(search))
+            // Tìm theo title nếu có
+            if (!string.IsNullOrEmpty(search))
             {
                 query = query.Where(e => e.EventName.Contains(search));
             }
 
-            var totalCount = await query.CountAsync();
+            var totalCount = await query.CountAsync(); // Đếm số lượng event sau khi lọc
 
             var events = await query
-                .Where(e => e.EventStatus == "Approved") // Lọc theo trạng thái
-                .OrderBy(e => e.EventID)  // Sắp xếp theo ID (hoặc tùy chỉnh)
-                .Skip((page - 1) * pageSize) // Bỏ qua các phần tử trước đó
-                .Take(pageSize) // Lấy số phần tử cần
+                .OrderBy(e => e.EventID)  // Sắp xếp theo ID
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             var response = new
@@ -92,6 +92,7 @@ namespace EventManagementServer.Controllers
 
             return Ok(response);
         }
+
 
         [HttpGet("admin")]
         [EnableRateLimiting("FixedWindowLimiter")]
@@ -142,28 +143,66 @@ namespace EventManagementServer.Controllers
         public async Task<ActionResult<Event>> GetEventById(int id)
         {
             var _event = await _context.Events
-                .Where(ea => ea.EventID == id && ea.EventStatus == "Approved")
-                .ToListAsync();
+                .Where(e => e.EventID == id && e.EventStatus == "Approved")
+                .Include(e => e.EventCategories) 
+                .ThenInclude(ec => ec.Category)  
+                .FirstOrDefaultAsync();
 
             if (_event == null) return NotFound();
 
             return Ok(_event);
         }
+
 
         [HttpGet("user/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
-        public async Task<ActionResult<Event>> GetEventByUserId(int id)
+        public async Task<ActionResult<IEnumerable<Event>>> GetEventsByUserId(int id, int page = 1, int pageSize = 10, int? categoryId = null, string? search = null)
         {
-            var _event = await _context.Events
-                .Where(ea => ea.CreatedBy == id && ea.EventStatus == "Approved")
-                .FirstOrDefaultAsync(e => e.CreatedBy == id);
+            if (page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
 
-            if (_event == null) return NotFound();
-            
-            return Ok(_event);
+            string? currentUser = User.Identity?.Name; // Lấy user hiện tại từ context
+
+            var query = _context.Events
+                .Where(e => e.CreatedBy == id) // Lọc theo trạng thái & CreateBy
+                .AsQueryable();
+
+            // Lọc theo Category nếu có
+            if (categoryId.HasValue)
+            {
+                query = from e in query
+                        join ec in _context.EventCategories on e.EventID equals ec.EventID
+                        where ec.CategoryID == categoryId.Value
+                        select e;
+            }
+
+            // Tìm theo title nếu có
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(e => e.EventName.Contains(search));
+            }
+
+            var totalCount = await query.CountAsync(); // Đếm số lượng event sau khi lọc
+
+            var events = await query
+                .OrderBy(e => e.EventID)  // Sắp xếp theo ID
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var response = new
+            {
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                CurrentPage = page,
+                PageSize = pageSize,
+                Events = events
+            };
+
+            return Ok(response);
         }
 
-        [Authorize]
+
+        [Authorize(Roles = "1,2")]
         [HttpPost]
         [Consumes("multipart/form-data")] //Kiểu request body là form-data 
         [EnableRateLimiting("FixedWindowLimiter")]
@@ -406,11 +445,10 @@ namespace EventManagementServer.Controllers
             //Tạo tên mới cho file ảnh
             string newFileName = existingEvent.EventImage;
 
-            //Nếu có file ảnh mới được gửi lên thì lưu file ảnh mới và xóa file ảnh cũ
-            if(_event.EventImageFile != null)
+            // Chỉ cập nhật ảnh nếu có file mới được tải lên
+            if (_event.EventImageFile != null)
             {
                 newFileName = $"{DateTime.Now:yyyyMMddHHmmss}_{Path.GetFileName(_event.EventImageFile.FileName)}";
-
                 string imagePath = Path.Combine(folderPath, newFileName);
 
                 using (var stream = new FileStream(imagePath, FileMode.Create))
@@ -419,18 +457,30 @@ namespace EventManagementServer.Controllers
                 }
 
                 var existingImagePath = Path.Combine(folderPath, existingEvent.EventImage);
-                if(System.IO.File.Exists(existingImagePath))
+                if (System.IO.File.Exists(existingImagePath))
                 {
                     System.IO.File.Delete(existingImagePath);
                 }
+
+                existingEvent.EventImage = newFileName; // Cập nhật ảnh mới
             }
+
 
             existingEvent.EventName = _event.EventName;
             existingEvent.EventDescription = _event.EventDescription;
             existingEvent.EventDate = _event.EventDate.ToUniversalTime();
             existingEvent.EventLocation = _event.EventLocation;
             existingEvent.EventImage = newFileName;
-            existingEvent.CreatedBy = _event.CreatedBy;
+            if (_event.CreatedBy != 0) // Chỉ cập nhật nếu giá trị hợp lệ
+            {
+                var userExists = await _context.Users.AnyAsync(u => u.UserID == _event.CreatedBy);
+                if (!userExists)
+                {
+                    return BadRequest("Invalid CreatedBy value.");
+                }
+                existingEvent.CreatedBy = _event.CreatedBy;
+            }
+
 
             var users = await _context.Users.ToListAsync();
             var notifications = new List<Notification>();
