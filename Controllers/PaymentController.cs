@@ -24,44 +24,56 @@ namespace EventManagementServer.Controllers
 
         [HttpPost("create-checkout-session")]
         [EnableRateLimiting("FixedWindowLimiter")]
-        //Tạo checkout session với thông tin sản phẩm và giá trị thanh toán
-        public IActionResult CreateCheckoutSession([FromBody] PaymentRequest request)
+        public async Task<IActionResult> CreateCheckoutSessionAsync([FromBody] PaymentRequest request)
         {
-            var domain = "https://your-website.com"; //domain của website khi user thanh toán thành công sẽ được chuyển đến
+            // ✅ Thiết lập API Key của Stripe
+            var secretKey = _configuration.GetValue<string>("Stripe:SecretKey");
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                return StatusCode(500, "Stripe API key is missing");
+            }
+
+            StripeConfiguration.ApiKey = secretKey;
+
+            var domain = "http://localhost:3000";
             var options = new SessionCreateOptions
             {
-                PaymentMethodTypes = new List<string> { "card" }, //Chỉ chấp nhận thanh toán bằng thẻ
+                PaymentMethodTypes = new List<string> { "card" },
                 LineItems = new List<SessionLineItemOptions>
             {
                 new SessionLineItemOptions
                 {
-                    //Thông tin sản phẩm và giá trị thanh toán
                     PriceData = new SessionLineItemPriceDataOptions
                     {
-                        Currency = "usd", //Loại tiền tệ
+                        Currency = "usd",
                         ProductData = new SessionLineItemPriceDataProductDataOptions
                         {
-                            Name = "Event Ticket" //Tên sản phẩm
+                            Name = "Event Ticket"
                         },
-                        UnitAmount = (long)(request.Amount * 100) //Giá trị thanh toán
+                        UnitAmount = (long)(request.Amount * 100)
                     },
                     Quantity = 1
                 }
             },
-                Mode = "payment", //Chế độ thanh toán
-                SuccessUrl = $"{domain}/success?session_id={{CHECKOUT_SESSION_ID}}&registrationId={request.RegistrationId}", //Link khi thanh toán thành công
-                CancelUrl = $"{domain}/cancel" //Link khi hủy thanh toán
+                Mode = "payment",
+                SuccessUrl = $"{domain}/success?session_id={{CHECKOUT_SESSION_ID}}&registrationId={request.RegistrationId}",
+                CancelUrl = $"{domain}/cancel",
+                Metadata = new Dictionary<string, string>
+                {
+                    { "registrationId", request.RegistrationId.ToString() }
+                }
             };
 
-            //Tạo checkout session
             var service = new SessionService();
-
-            //Lưu thông tin registrationId vào metadata của session
             Session session = service.Create(options);
 
-            //Trả về thông tin session
+            await UpdatePaymentDate(request.RegistrationId);
+
             return Ok(new { sessionId = session.Id, url = session.Url });
         }
+        
+
+
 
         [HttpPost("webhook")]
         [EnableRateLimiting("FixedWindowLimiter")]
@@ -79,11 +91,25 @@ namespace EventManagementServer.Controllers
             //Xử lý event
             if (stripeEvent.Type == "checkout.session.completed")
             {
-                var session = stripeEvent.Data.Object as Stripe.Checkout.Session; //Lấy thông tin session
-                if (session != null)
+                var session = stripeEvent.Data.Object as Stripe.Checkout.Session;
+                if (session != null && session.Metadata.TryGetValue("registrationId", out var registrationIdStr))
                 {
-                    var registrationId = int.Parse(session.Metadata["registrationId"]);
-                    await UpdatePaymentDate(registrationId); //Gọi hàm cập nhật payment date
+                    if (int.TryParse(registrationIdStr, out var registrationId))
+                    {
+                        await UpdatePaymentDate(registrationId);
+                        // Log để debug
+                        Console.WriteLine($"Updated payment date for registration {registrationId}");
+                    }
+                    else
+                    {
+                        // Log để debug
+                        Console.WriteLine($"Failed to parse registrationId: {registrationIdStr}");
+                    }
+                }
+                else
+                {
+                    // Log để debug
+                    Console.WriteLine("No registrationId found in metadata");
                 }
             }
 
@@ -92,17 +118,19 @@ namespace EventManagementServer.Controllers
 
         //Hàm cập nhật payment date
         private async Task UpdatePaymentDate(int registrationId)
-        {
-            //Tìm registration theo registrationId
-            var registration = await _dbContext.Registrations.FirstOrDefaultAsync(r => r.RegistrationID == registrationId);
-
-            //Nếu tìm thấy registration thì cập nhật payment date
-            if (registration != null)
-            {
-                registration.PaymentDate = DateTime.UtcNow;
-                await _dbContext.SaveChangesAsync();
-            }
-        }
+{
+    var registration = await _dbContext.Registrations.FirstOrDefaultAsync(r => r.RegistrationID == registrationId);
+    if (registration != null)
+    {
+        registration.PaymentDate = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+        Console.WriteLine($"Updated payment date for registration {registrationId} to {DateTime.UtcNow}");
+    }
+    else
+    {
+        Console.WriteLine($"Registration with ID {registrationId} not found");
+    }
+}
     }
 }
 

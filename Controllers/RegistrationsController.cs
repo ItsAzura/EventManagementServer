@@ -55,7 +55,7 @@ namespace EventManagementServer.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if (registrationDto.UserID.ToString() != userId || userRole != "1")
+            if (registrationDto.UserID.ToString() != userId && userRole != "1")
                 return Forbid();
 
             var ticketIds = registrationDto.RegistrationDetails.Select(rd => rd.TicketID).ToList();
