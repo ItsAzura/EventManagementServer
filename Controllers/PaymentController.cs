@@ -118,19 +118,38 @@ namespace EventManagementServer.Controllers
 
         //Hàm cập nhật payment date
         private async Task UpdatePaymentDate(int registrationId)
-{
-    var registration = await _dbContext.Registrations.FirstOrDefaultAsync(r => r.RegistrationID == registrationId);
-    if (registration != null)
-    {
-        registration.PaymentDate = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync();
-        Console.WriteLine($"Updated payment date for registration {registrationId} to {DateTime.UtcNow}");
-    }
-    else
-    {
-        Console.WriteLine($"Registration with ID {registrationId} not found");
-    }
-}
+        {
+            var registration = await _dbContext.Registrations
+                .Include(r => r.RegistrationDetails) // Include để lấy danh sách RegistrationDetails
+                .ThenInclude(rd => rd.Ticket) // Include Ticket để lấy Capacity
+                .FirstOrDefaultAsync(r => r.RegistrationID == registrationId);
+
+            if (registration != null)
+            {
+                registration.PaymentDate = DateTime.UtcNow;
+
+                foreach (var detail in registration.RegistrationDetails)
+                {
+                    var ticket = detail.Ticket;
+                    if (ticket != null)
+                    {
+                        ticket.Quantity -= detail.Quantity; // Trừ Capacity đi Quantity đã đặt
+                        if (ticket.Quantity < 0)
+                        {
+                            ticket.Quantity = 0; // Đảm bảo không âm Capacity
+                        }
+                    }
+                }
+
+                await _dbContext.SaveChangesAsync();
+                Console.WriteLine($"Updated payment date and reduced ticket capacity for registration {registrationId}");
+            }
+            else
+            {
+                Console.WriteLine($"Registration with ID {registrationId} not found");
+            }
+        }
+
     }
 }
 

@@ -45,6 +45,23 @@ namespace EventManagementServer.Controllers
             return Ok(registration);
         }
 
+        //[Authorize(Roles = "1,2")]
+        [HttpGet("user/{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
+        public async Task<ActionResult<IEnumerable<Registration>>> GetRegistrationsByUser(int id)
+        {
+            //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            //var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            //if (id.ToString() != userId && userRole != "1") return Forbid();
+
+            return await _context.Registrations
+                .Include(r => r.RegistrationDetails)
+                .ThenInclude(rd => rd.Ticket)
+                .Where(r => r.UserID == id)
+                .ToListAsync();
+        }
+
         [Authorize(Roles = "1,2")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowLimiter")]
