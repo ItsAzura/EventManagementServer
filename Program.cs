@@ -2,12 +2,16 @@
 using EventManagementServer.Interface;
 using EventManagementServer.Repositories;
 using EventManagementServer.Services;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json.Serialization;
+using EventManagementServer.Validator;
+using Microsoft.AspNetCore.Identity;
+;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +21,20 @@ builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.Re
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddControllers();
+builder.Services.AddValidatorsFromAssemblyContaining<UserDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<TicketDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<RoleDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<RegistrationDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<RegistrationDetailDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<NotificationDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<EventDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<EventCategoryDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<EventAreaDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ContactResponseDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ContactRequestDtoValidator>();
 
 //Đăng ký Dịch vụ để kết nối với database
 builder.Services.AddDbContext<EventDbContext>(options =>

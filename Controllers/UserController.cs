@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Security.Cryptography;
 
 namespace EventManagementServer.Controllers
@@ -108,7 +109,7 @@ namespace EventManagementServer.Controllers
             return CreatedAtAction(nameof(GetUserById), new { id = newUser.UserID }, newUser);
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = "1,2")]
         [HttpPut("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<User>> UpdateUser(int id, [FromBody] UpdateUserDto user)
@@ -118,7 +119,13 @@ namespace EventManagementServer.Controllers
             var existingUser = await _context.Users.FindAsync(id);
              
             if(existingUser == null) return BadRequest();
-     
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (existingUser.UserID.ToString() != userId && userRole != "1")
+                return Forbid();
+
             // Generate a random salt
             byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
 

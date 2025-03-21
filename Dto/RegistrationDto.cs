@@ -4,7 +4,6 @@ namespace EventManagementServer.Dto
 {
     public class RegistrationDto
     {
-        [Required]
         public int UserID { get; set; }
 
         public DateTime RegistrationDate { get; set; }

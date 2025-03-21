@@ -6,10 +6,8 @@ namespace EventManagementServer.Dto
 {
     public class EventCategoryDto
     {
-        [Required]
         public int EventID { get; set; }
 
-        [Required]
         public int CategoryID { get; set; }
     }
 }

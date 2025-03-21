@@ -6,7 +6,6 @@ namespace EventManagementServer.Dto
     {
         public int EventID { get; set; }
 
-        [Required, MaxLength(100)]
         public string AreaName { get; set; } = string.Empty;
 
         [Required]

@@ -1,11 +1,14 @@
 {
   "version": 2,
-  "dgSpecHash": "Fyd2JxvwM3fxtAa1tQUKIDgKWsDv4h3w9vte+vYxUFMt+ZjcDkWD9pgl5GKtBRE60RXhF3EYUh6ezu0OpDTB8w==",
+  "dgSpecHash": "P6FHxTgNZudXcU6J/IQHvunr0nR6ZNVZ4EJdMNA8TCzRZOU3zGootxCammivdTsBFhctrKqTQMjpY7lWMnsm2g==",
   "success": true,
   "projectFilePath": "D:\\Learn C#\\EventManagementServer\\EventManagementServer\\EventManagementServer.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Admin\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\Admin\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\fluentvalidation\\11.5.1\\fluentvalidation.11.5.1.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\fluentvalidation.aspnetcore\\11.3.0\\fluentvalidation.aspnetcore.11.3.0.nupkg.sha512",
+    "C:\\Users\\Admin\\.nuget\\packages\\fluentvalidation.dependencyinjectionextensions\\11.5.1\\fluentvalidation.dependencyinjectionextensions.11.5.1.nupkg.sha512",
     "C:\\Users\\Admin\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\Admin\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\8.0.4\\microsoft.aspnetcore.authentication.jwtbearer.8.0.4.nupkg.sha512",
     "C:\\Users\\Admin\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\7.0.0\\microsoft.bcl.asyncinterfaces.7.0.0.nupkg.sha512",
