@@ -12,6 +12,7 @@ using System.Text.Json.Serialization;
 using EventManagementServer.Validator;
 using Microsoft.AspNetCore.Identity;
 using Serilog;
+using Serilog.Formatting.Compact;
 ;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,7 +36,9 @@ builder.Host.UseSerilog((context, config) =>
         .Enrich.WithProcessName()
         .Enrich.WithThreadId()
         .WriteTo.Debug(outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-        .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}");
+        .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+        .WriteTo.File("Logs/log.txt", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, buffered: true)
+        .WriteTo.File(new CompactJsonFormatter(), "Logs/log.json", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true, buffered: true);
 });
 
 builder.Services.AddControllers();
