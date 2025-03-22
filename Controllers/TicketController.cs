@@ -13,10 +13,12 @@ namespace EventManagementServer.Controllers
     public class TicketController : Controller
     {
         private readonly EventDbContext _context;
+        private readonly ILogger<TicketController> _logger;
 
-        public TicketController(EventDbContext context)
+        public TicketController(EventDbContext context, ILogger<TicketController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -59,6 +61,8 @@ namespace EventManagementServer.Controllers
                 Tickets = tickets
             };
 
+            _logger.LogInformation($"Get tickets: {response}");
+
             return Ok(response);
         }
 
@@ -69,6 +73,8 @@ namespace EventManagementServer.Controllers
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
 
             if (ticket == null) return NotFound();
+
+            _logger.LogInformation($"Get ticket by id: {ticket}");
 
             return Ok(ticket);
         }
@@ -82,6 +88,8 @@ namespace EventManagementServer.Controllers
                 .ToListAsync();
 
             if (ticket == null) return NotFound();
+
+            _logger.LogInformation($"Get ticket by event area id: {ticket}");
 
             return Ok(ticket);
         }
@@ -128,6 +136,8 @@ namespace EventManagementServer.Controllers
             if (newTicket == null || (eventByeventArea.CreatedBy.ToString() != userId && userRole != "1"))
                 return Forbid();
 
+            _logger.LogInformation($"Create new ticket: {newTicket}");
+
             _context.Tickets.Add(newTicket);
             await _context.SaveChangesAsync();
 
@@ -161,6 +171,8 @@ namespace EventManagementServer.Controllers
             existingTicket.Quantity = ticket.Quantity;
             existingTicket.Price = ticket.Price;
 
+            _logger.LogInformation($"Update ticket: {existingTicket}");
+
             await _context.SaveChangesAsync();
 
             return Ok(existingTicket);
@@ -183,6 +195,8 @@ namespace EventManagementServer.Controllers
 
             if (eventByeventArea.CreatedBy.ToString() != userId && userRole != "1")
                 return Forbid();
+
+            _logger.LogInformation($"Delete ticket: {ticket}");
 
             _context.Tickets.Remove(ticket);
             await _context.SaveChangesAsync();
@@ -210,6 +224,8 @@ namespace EventManagementServer.Controllers
 
             ticket.Status = "Available";
 
+            _logger.LogInformation($"Activate ticket: {ticket}");
+
             await _context.SaveChangesAsync();
 
             return Ok(ticket);
@@ -234,6 +250,8 @@ namespace EventManagementServer.Controllers
                 return Forbid();
 
             ticket.Status = "Unavailable";
+
+            _logger.LogInformation($"Deactivate ticket: {ticket}");
 
             await _context.SaveChangesAsync();
 

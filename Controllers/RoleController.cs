@@ -11,17 +11,23 @@ namespace EventManagementServer.Controllers
     public class RoleController : Controller
     {
         private readonly EventDbContext _context;
+        private readonly ILogger<RoleController> _logger;
 
-        public RoleController(EventDbContext context)
+        public RoleController(EventDbContext context, ILogger<RoleController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         [Authorize(Roles = "1")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Role>>> GetRoles()
         {
-            return await _context.Roles.ToListAsync();
+            var roles = await _context.Roles.ToListAsync();
+
+            _logger.LogInformation($"Get all roles: {roles}");
+
+            return Ok(roles);
         }
 
         [Authorize(Roles = "1")]
@@ -31,6 +37,8 @@ namespace EventManagementServer.Controllers
             var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleID == id);
 
             if (role == null) return NotFound();
+
+            _logger.LogInformation($"Get role by id: {role}");
 
             return Ok(role);
         }
@@ -46,6 +54,8 @@ namespace EventManagementServer.Controllers
                 RoleName = role.RoleName,
                 RoleDescription = role.RoleDescription,
             };
+
+            _logger.LogInformation($"Create new role: {newRole}");
 
             _context.Roles.Add(newRole);
             await _context.SaveChangesAsync();
@@ -66,6 +76,8 @@ namespace EventManagementServer.Controllers
             existingRole.RoleName = role.RoleName;
             existingRole.RoleDescription = role.RoleDescription;
 
+            _logger.LogInformation($"Update role: {existingRole}");
+
             await _context.SaveChangesAsync();
 
             return Ok(existingRole);
@@ -78,6 +90,8 @@ namespace EventManagementServer.Controllers
             var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleID == id);
 
             if (role == null) return NotFound();
+
+            _logger.LogInformation($"Delete role: {role}");
 
             _context.Roles.Remove(role);
             await _context.SaveChangesAsync();

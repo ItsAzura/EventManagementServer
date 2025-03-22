@@ -13,10 +13,12 @@ namespace EventManagementServer.Controllers
     public class RegistrationsController : Controller
     {
         private readonly EventDbContext _context;
+        private readonly ILogger<RegistrationsController> _logger;
 
-        public RegistrationsController(EventDbContext context)
+        public RegistrationsController(EventDbContext context, ILogger<RegistrationsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         [Authorize(Roles = "1,2")]
@@ -24,10 +26,14 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Registration>>> GetRegistrations()
         {
-            return await _context.Registrations
+            var response = await _context.Registrations
                 .Include(r => r.RegistrationDetails)
                 .ThenInclude(rd => rd.Ticket)
                 .ToListAsync();
+
+            _logger.LogInformation($"Get all registrations: {response}");
+
+            return Ok(response);
         }
 
         [Authorize(Roles = "1,2")]
@@ -42,24 +48,30 @@ namespace EventManagementServer.Controllers
 
             if (registration == null) return NotFound();
 
+            _logger.LogInformation($"Get registration by id: {registration}");
+
             return Ok(registration);
         }
 
-        //[Authorize(Roles = "1,2")]
+        [Authorize(Roles = "1,2")]
         [HttpGet("user/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<Registration>>> GetRegistrationsByUser(int id)
         {
-            //var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            //var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            //if (id.ToString() != userId && userRole != "1") return Forbid();
+            if (id.ToString() != userId && userRole != "1") return Forbid();
 
-            return await _context.Registrations
+            var response = await _context.Registrations
                 .Include(r => r.RegistrationDetails)
                 .ThenInclude(rd => rd.Ticket)
                 .Where(r => r.UserID == id)
                 .ToListAsync();
+
+            _logger.LogInformation($"Get registrations by user id: {response}");
+
+            return Ok(response);
         }
 
         [Authorize(Roles = "1,2")]
@@ -76,6 +88,8 @@ namespace EventManagementServer.Controllers
                 return Forbid();
 
             var ticketIds = registrationDto.RegistrationDetails.Select(rd => rd.TicketID).ToList();
+
+            _logger.LogInformation($"Ticket IDs: {ticketIds}");
 
             //Kiểm tra xem các ticket có hợp lệ không
             var validTickets = await _context.Tickets.Where(t => ticketIds.Contains(t.TicketID)).ToListAsync();
@@ -111,6 +125,8 @@ namespace EventManagementServer.Controllers
                     Quantity = rd.Quantity
                 }).ToList()
             };
+
+            _logger.LogInformation($"New registration: {registration}");
 
             _context.Registrations.Add(registration);
             await _context.SaveChangesAsync();
@@ -221,6 +237,8 @@ namespace EventManagementServer.Controllers
                 return Forbid();
 
             var deletedRegistration = registration; // Lưu thông tin đăng ký bị xóa
+
+            _logger.LogInformation($"Delete registration {id}");
 
             _context.RegistrationDetails.RemoveRange(registration.RegistrationDetails);
 

@@ -16,14 +16,16 @@ namespace EventManagementServer.Controllers
     {
         private readonly EventDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<ContactController> _logger;
 
         private readonly EmailService _emailService;
 
-        public ContactController(EventDbContext context, IConfiguration configuration, EmailService emailService)
+        public ContactController(EventDbContext context, IConfiguration configuration, EmailService emailService, ILogger<ContactController> logger)
         {
             _context = context;
             _configuration = configuration;
             _emailService = emailService;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -45,6 +47,8 @@ namespace EventManagementServer.Controllers
             _context.Contacts.Add(contact);
             await _context.SaveChangesAsync();
 
+            _logger.LogInformation($"New contact from {contactRequest.Email}");
+
             return Ok( );
         }
 
@@ -52,7 +56,11 @@ namespace EventManagementServer.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Contact>>> GetContacts()
         {
-            return await _context.Contacts.OrderByDescending(c => c.CreatedAt).ToListAsync();
+            var contacts = await _context.Contacts.OrderByDescending(c => c.CreatedAt).ToListAsync();
+
+            _logger.LogInformation($"Get all contacts: {contacts}");
+
+            return Ok(contacts);
         }
 
         [Authorize(Roles = "1")]
@@ -77,6 +85,8 @@ namespace EventManagementServer.Controllers
             // Cập nhật trạng thái đã phản hồi
             contact.IsResponded = true;
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Responded to contact {id}");
 
             return Ok(new { message = "Đã phản hồi thành công" });
         }

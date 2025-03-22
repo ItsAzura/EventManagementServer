@@ -15,10 +15,12 @@ namespace EventManagementServer.Controllers
     public class EventController : Controller
     {
         private readonly EventDbContext _context;
+        private readonly ILogger<EventController> _logger;
 
-        public EventController(EventDbContext context)
+        public EventController(EventDbContext context, ILogger<EventController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         [HttpGet("images/{imageName}")]
@@ -44,6 +46,8 @@ namespace EventManagementServer.Controllers
                 .OrderByDescending(e => e.EventDate)
                 .Take(6)
                 .ToListAsync();
+
+            _logger.LogInformation("Get top 6 events: {@events}", events);
 
             return Ok(events);
         }
@@ -90,6 +94,8 @@ namespace EventManagementServer.Controllers
                 Events = events
             };
 
+            _logger.LogInformation("Get events: {@response}", response);
+
             return Ok(response);
         }
 
@@ -135,6 +141,8 @@ namespace EventManagementServer.Controllers
                 Events = events
             };
 
+            _logger.LogInformation("Get events: {@response}", response);
+
             return Ok(response);
         }
 
@@ -149,6 +157,8 @@ namespace EventManagementServer.Controllers
                 .FirstOrDefaultAsync();
 
             if (_event == null) return NotFound();
+
+            _logger.LogInformation("Get event by id: {@event}", _event);
 
             return Ok(_event);
         }
@@ -197,6 +207,8 @@ namespace EventManagementServer.Controllers
                 PageSize = pageSize,
                 Events = events
             };
+
+            _logger.LogInformation("Get events by user id: {@response}", response);
 
             return Ok(response);
         }
@@ -253,6 +265,8 @@ namespace EventManagementServer.Controllers
                 CreatedBy = _event.CreatedBy,
                 EventStatus = "Pending",
             };
+
+            _logger.LogInformation("Create new event: {@event}", newEvent);
 
             _context.Events.Add(newEvent);
 
@@ -481,6 +495,8 @@ namespace EventManagementServer.Controllers
                 existingEvent.CreatedBy = _event.CreatedBy;
             }
 
+            _logger.LogInformation("Update event: {@event}", existingEvent);
+
 
             var users = await _context.Users.ToListAsync();
             var notifications = new List<Notification>();
@@ -533,6 +549,8 @@ namespace EventManagementServer.Controllers
             {
                 System.IO.File.Delete(imagePath);
             }
+
+            _logger.LogInformation("Delete event: {@event}", existingEvent);
 
             _context.Events.Remove(existingEvent);
             _context.SaveChanges();

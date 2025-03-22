@@ -17,20 +17,24 @@ namespace EventManagementServer.Controllers
     public class FeedbackController : Controller
     {
         private readonly EventDbContext _context;
+        private readonly ILogger<FeedbackController> _logger;
 
-        public FeedbackController(EventDbContext context)
+        public FeedbackController(EventDbContext context, ILogger<FeedbackController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
-        [Authorize]
         [HttpGet("event/{eventId}")]
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<Feedback>>  GetFeedBackByEventId (int eventId)
         {
-            var feedback = await _context.Feedbacks.FirstOrDefaultAsync(f => f.EventId == eventId);
+            var feedback = await _context
+                .Feedbacks.Where(x => x.EventId == eventId).ToListAsync();
 
             if (feedback == null) return NotFound();
+
+            _logger.LogInformation($"Get feedback by event id: {feedback}");
 
             return Ok(feedback);
         }
@@ -63,6 +67,8 @@ namespace EventManagementServer.Controllers
                 Rating = feedbackDto.Rating,
                 CreatedAt = DateTime.UtcNow
             };
+
+            _logger.LogInformation($"New feedback from user {userId}");
 
             _context.Feedbacks.Add(feedback);
 
@@ -107,6 +113,29 @@ namespace EventManagementServer.Controllers
                 feedbackId = feedback.Id
             });
 
+        }
+
+        [Authorize]
+        [HttpDelete("{id}")]
+        [EnableRateLimiting("FixedWindowLimiter")]
+        public async Task<ActionResult> DeleteFeedback(int id)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            var feedback = await _context.Feedbacks
+                .FirstOrDefaultAsync(f => f.Id == id);
+
+            if (feedback == null) return NotFound();
+
+            if (feedback.UserId.ToString() != userId && userRole != "1") return Forbid();
+
+            _logger.LogInformation($"Delete feedback {id}");
+
+            _context.Feedbacks.Remove(feedback);
+            await _context.SaveChangesAsync();
+
+            return Ok();
         }
     }
 }

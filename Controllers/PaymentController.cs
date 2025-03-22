@@ -14,12 +14,14 @@ namespace EventManagementServer.Controllers
     {
         private readonly IConfiguration _configuration;
         private readonly EventDbContext _dbContext;
+        private readonly ILogger<PaymentController> _logger;
 
         //Constructor
-        public PaymentController(IConfiguration configuration, EventDbContext eventDbContext)
+        public PaymentController(IConfiguration configuration, EventDbContext eventDbContext, ILogger<PaymentController> logger)
         {
             _configuration = configuration;
             _dbContext = eventDbContext;
+            _logger = logger;
         }
 
         [HttpPost("create-checkout-session")]
@@ -140,6 +142,8 @@ namespace EventManagementServer.Controllers
                         }
                     }
                 }
+
+                _logger.LogInformation($"Updated payment date and reduced ticket capacity for registration {registrationId}");
 
                 await _dbContext.SaveChangesAsync();
                 Console.WriteLine($"Updated payment date and reduced ticket capacity for registration {registrationId}");

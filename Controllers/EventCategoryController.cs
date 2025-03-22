@@ -16,11 +16,13 @@ namespace EventManagementServer.Controllers
     {
         private readonly EventDbContext _context;
         private readonly IEventCategoryRepository _repository;
+        private readonly ILogger<EventCategoryController> _logger;
 
-        public EventCategoryController(EventDbContext context, IEventCategoryRepository repository)
+        public EventCategoryController(EventDbContext context, IEventCategoryRepository repository, ILogger<EventCategoryController> logger)
         {
             _context = context;
             _repository = repository;
+            _logger = logger;
         }
 
         [Authorize]
@@ -28,7 +30,11 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         public async Task<ActionResult<IEnumerable<EventCategory>>> GetEventCategories()
         {
-            return Ok(await _repository.GetEventCategoriesAsync());
+            var response = await _repository.GetEventCategoriesAsync();
+
+            _logger.LogInformation($"Get all event categories: {response}");
+
+            return Ok(response);
         }
 
         [Authorize]
@@ -39,6 +45,8 @@ namespace EventManagementServer.Controllers
             var eventCategory = await _repository.GetEventCategoryByIdAsync(id);
 
             if (eventCategory == null) return NotFound();
+
+            _logger.LogInformation($"Get event category by id: {eventCategory}");
 
             return Ok(eventCategory);
         }
@@ -54,6 +62,8 @@ namespace EventManagementServer.Controllers
 
             if (newEventCategory == null) return Forbid();
 
+            _logger.LogInformation($"New event category: {newEventCategory}");
+
             return CreatedAtAction(nameof(GetEventCategoryById), new { id = newEventCategory.EventCategoryID }, newEventCategory);
         }
 
@@ -68,6 +78,8 @@ namespace EventManagementServer.Controllers
 
             if (updatedEventCategory == null) return NotFound();
 
+            _logger.LogInformation($"Update event category: {updatedEventCategory}");
+
             return Ok(updatedEventCategory);
         }
 
@@ -79,6 +91,8 @@ namespace EventManagementServer.Controllers
             var success = await _repository.DeleteEventCategoryAsync(id, User);
 
             if (!success) return Forbid();
+
+            _logger.LogInformation($"Delete event category: {id}");
 
             return NoContent();
         }

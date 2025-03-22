@@ -16,12 +16,13 @@ namespace EventManagementServer.Controllers
     {
         private readonly EventDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<UserController> _logger;
 
-        public UserController(EventDbContext context, IConfiguration configuration)
+        public UserController(EventDbContext context, IConfiguration configuration, ILogger<UserController> logger)
         {
             _context = context;
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-
+            _logger = logger;
         }
 
         [Authorize(Roles = "1")]
@@ -60,6 +61,8 @@ namespace EventManagementServer.Controllers
                 Users = users
             };
 
+            _logger.LogInformation($"Get users: {response}");
+
             return Ok(response);
         }
 
@@ -71,6 +74,8 @@ namespace EventManagementServer.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserID == id); 
 
             if (user == null) return NotFound();
+
+            _logger.LogInformation($"Get user by id: {user}");
 
             return Ok(user);
         }
@@ -101,6 +106,8 @@ namespace EventManagementServer.Controllers
                 RoleID = _configuration.GetValue<int>("User"),
                 PasswordHash = hashPassword
             };
+
+            _logger.LogInformation($"Create new user: {newUser}");
 
             _context.Users.Add(newUser);
 
@@ -143,6 +150,8 @@ namespace EventManagementServer.Controllers
             existingUser.RoleID = user.RoleID;
             existingUser.PasswordHash = hashPassword;
 
+            _logger.LogInformation($"Update user: {existingUser}");
+
             _context.Entry(existingUser).State = EntityState.Modified;
             await _context.SaveChangesAsync();
 
@@ -162,6 +171,8 @@ namespace EventManagementServer.Controllers
             {
                 return BadRequest("Cannot delete an admin user");
             }
+
+            _logger.LogInformation($"Delete user: {user}");
 
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
@@ -184,6 +195,8 @@ namespace EventManagementServer.Controllers
                 "User" => 2,
                 _ => 2
             };
+
+            _logger.LogInformation($"Change role: {user}");
 
             _context.Entry(user).State = EntityState.Modified;
 

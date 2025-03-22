@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using EventManagementServer.Validator;
 using Microsoft.AspNetCore.Identity;
+using Serilog;
 ;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +22,21 @@ builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.Re
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+//Dùng Serilog để ghi log
+builder.Host.UseSerilog((context, config) =>
+{
+    config.MinimumLevel.Information()
+        .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.Hosting.Lifetime", Serilog.Events.LogEventLevel.Information)
+        .Enrich.FromLogContext()
+        .Enrich.WithEnvironmentName()
+        .Enrich.WithProcessId()
+        .Enrich.WithProcessName()
+        .Enrich.WithThreadId()
+        .WriteTo.Debug(outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+        .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}");
+});
 
 builder.Services.AddControllers();
 builder.Services.AddValidatorsFromAssemblyContaining<UserDtoValidator>();
@@ -127,5 +143,7 @@ app.MapControllers();
 app.MapHub<NotificationHub>("/notificationHub");
 
 app.UseRateLimiter();
+
+app.UseSerilogRequestLogging();
 
 app.Run();
