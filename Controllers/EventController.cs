@@ -42,6 +42,8 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("/top6")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Event>>> GetTop6Events()
         {
             var events = await _context.Events
@@ -50,6 +52,8 @@ namespace EventManagementServer.Controllers
                 .Take(6)
                 .ToListAsync();
 
+            if (events == null) return NotFound();
+
             _logger.LogInformation("Get top 6 events: {@events}", events);
 
             return Ok(events);
@@ -57,6 +61,8 @@ namespace EventManagementServer.Controllers
 
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Event>>> GetEvents(int page = 1, int pageSize = 10, int? categoryId = null, string? search = null)
         {
             if (page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
@@ -88,6 +94,8 @@ namespace EventManagementServer.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
+            if (events == null) return NotFound();
+
             var response = new
             {
                 TotalCount = totalCount,
@@ -105,6 +113,8 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("admin")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Event>>> GetEventsAdmin(int page = 1, int pageSize = 10, int? categoryId = null, string? search = null)
         {
             if (page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
@@ -135,6 +145,8 @@ namespace EventManagementServer.Controllers
                 .Take(pageSize) // Lấy số phần tử cần
                 .ToListAsync();
 
+            if (events == null) return NotFound();
+
             var response = new
             {
                 TotalCount = totalCount,
@@ -151,6 +163,8 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Event>> GetEventById(int id)
         {
             var _event = await _context.Events
@@ -221,6 +235,9 @@ namespace EventManagementServer.Controllers
         [HttpPost]
         [Consumes("multipart/form-data")] //Kiểu request body là form-data 
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<Event>> CreateEvent([FromForm] EventDto _event, [FromServices] IHubContext<NotificationHub> hubContext)
         {
             //Kiểm tra xem EventImageFile có tồn tại hay không
@@ -307,6 +324,8 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1")]
         [HttpPut("{id}/approve")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> ApproveEvent(int id, [FromServices] IHubContext<NotificationHub> hubContext)
         {
             var existingEvent = await _context.Events.FirstOrDefaultAsync(e => e.EventID == id);
@@ -385,6 +404,8 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1")]
         [HttpPut("{id}/reject")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> RejectEvent(int id, [FromServices] IHubContext<NotificationHub> hubContext)
         {
             var existingEvent = await _context.Events.FirstOrDefaultAsync(e => e.EventID == id);
@@ -438,6 +459,9 @@ namespace EventManagementServer.Controllers
         [HttpPut("{id}")]
         [Consumes("multipart/form-data")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<Event>> UpdateEvent(int id, [FromForm] EventDto _event, [FromServices] IHubContext<NotificationHub> hubContext)
         {
             if(!ModelState.IsValid) return BadRequest(ModelState);
@@ -534,6 +558,9 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpDelete("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> DeleteEvent(int id)
         {
             var existingEvent = await _context.Events

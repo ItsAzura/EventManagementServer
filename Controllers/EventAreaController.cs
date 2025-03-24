@@ -28,9 +28,13 @@ namespace EventManagementServer.Controllers
 
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IEnumerable<EventArea>>> GetEventAreas()
         {
             var respone = await _repository.GetEventAreasAsync();
+
+            if (respone == null) return NotFound();
 
             _logger.LogInformation($"Get all event areas: {respone}");
 
@@ -39,6 +43,8 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<EventArea>> GetEventAreaById(int id)
         {
             var eventArea = await _repository.GetEventAreaByIdAsync(id);
@@ -51,6 +57,8 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("event/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<EventArea>>> GetEventAreaByEventId(int id)
         {
             var eventArea = await _repository.GetEventAreaByEventIdAsync(id);
@@ -65,6 +73,8 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<EventArea>> CreateEventArea([FromBody] EventAreaDto eventArea)
         {
             if(!ModelState.IsValid) return BadRequest(ModelState);
@@ -79,6 +89,9 @@ namespace EventManagementServer.Controllers
 
         [HttpPut("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<EventArea>> UpdateEventArea(int id, [FromBody] EventAreaDto eventArea)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -94,6 +107,8 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpDelete("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> DeleteEventArea(int id)
         {
             var success = await _repository.DeleteEventAreaAsync(id, User);

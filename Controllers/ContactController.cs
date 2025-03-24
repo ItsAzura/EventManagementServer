@@ -31,6 +31,8 @@ namespace EventManagementServer.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<Contact>> PostContact(ContactRequestDto contactRequest)
         {
             if (string.IsNullOrEmpty(contactRequest.Email) || string.IsNullOrEmpty(contactRequest.Name))
@@ -56,10 +58,14 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Contact>>> GetContacts()
         {
             var contacts = await _context.Contacts.OrderByDescending(c => c.CreatedAt).ToListAsync();
 
+            if(contacts == null)  return NotFound();
+            
             _logger.LogInformation($"Get all contacts: {contacts}");
 
             return Ok(contacts);
@@ -67,15 +73,14 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpPost("respond/{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> RespondToContact(int id, ContactResponseDto response)
         {
             var contact = await _context.Contacts.FindAsync(id);
 
-            if (contact == null)
-            {
-                return NotFound();
-            }
-
+            if (contact == null) return NotFound();
+            
             // Gửi email phản hồi
             string subject = "Phản hồi từ Event Management";
             string body = $"<p>Xin chào {contact.Name},</p>" +

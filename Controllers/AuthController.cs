@@ -22,6 +22,8 @@ namespace EventManagementServer.Controllers
 
         [HttpPost("register")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> RegisterAsync(UserDto request)
         {
             var user = await _authService.RegisterAsync(request);
@@ -35,6 +37,8 @@ namespace EventManagementServer.Controllers
 
         [HttpPost("login")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> LoginAsync(LoginUserDto request)
         {
             var token = await _authService.LoginAsync(request);
@@ -48,6 +52,9 @@ namespace EventManagementServer.Controllers
 
         [HttpPost("refresh-token")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> RefreshTokensAsync(RefreshTokenRequestDto request)
         {
             var result = await _authService.RefreshTokensAsync(request);
@@ -62,6 +69,8 @@ namespace EventManagementServer.Controllers
 
         [HttpPost("logout")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Logout(LogoutRequestDto request)
         {
             var success = await _authService.LogoutAsync(request.UserId, request.RefreshToken);

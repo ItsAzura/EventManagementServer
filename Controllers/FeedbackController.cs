@@ -28,6 +28,8 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("event/{eventId}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Feedback>>  GetFeedBackByEventId (int eventId)
         {
             var feedback = await _context
@@ -43,6 +45,9 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpPost]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> CreateFeedback([FromBody] FeedbackDto feedbackDto, [FromServices] IHubContext<NotificationHub> hubContext)
         {
             //Kiểm tra xem user đã đăng nhập chưa
@@ -119,6 +124,9 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpDelete("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteFeedback(int id)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

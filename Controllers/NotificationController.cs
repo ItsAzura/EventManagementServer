@@ -24,12 +24,17 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpGet("user/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Notification>>> GetNotificationsByUser(int id)
         {
             var notifications = await _context.Notifications
                 .Where(n => n.UserID == id)
                 .OrderByDescending(n => n.CreatedAt)
                 .ToListAsync();
+
+            if (notifications == null) return NotFound();
 
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
@@ -44,6 +49,8 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpGet("unread")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Notification>>> GetUnreadNotifications()
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
@@ -53,6 +60,8 @@ namespace EventManagementServer.Controllers
                 .OrderByDescending(n => n.CreatedAt)
                 .ToListAsync();
 
+            if (notifications == null) return NotFound();
+
             _logger.LogInformation($"Get unread notifications: {notifications}");
 
             return Ok(notifications);
@@ -61,6 +70,8 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpGet("read")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Notification>>> GetReadNotifications([FromBody] int notificationId)
         {
             var notification = await _context.Notifications.FindAsync(notificationId);

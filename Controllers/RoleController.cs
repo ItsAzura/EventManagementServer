@@ -24,9 +24,13 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Role>>> GetRoles()
         {
             var roles = await _context.Roles.ToListAsync();
+
+            if (roles == null) return NotFound();
 
             _logger.LogInformation($"Get all roles: {roles}");
 
@@ -35,6 +39,8 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Role>> GetRoleById(int id)
         {
             var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleID == id);
@@ -48,6 +54,8 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<Role>> CreateRole([FromBody] RoleDto role)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -68,6 +76,9 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpPut("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Role>> UpdateRole(int id, [FromBody] RoleDto role)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -88,6 +99,8 @@ namespace EventManagementServer.Controllers
 
         [Authorize(Roles = "1")]
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteRole(int id)
         {
             var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleID == id);

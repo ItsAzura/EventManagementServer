@@ -26,12 +26,16 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Registration>>> GetRegistrations()
         {
             var response = await _context.Registrations
                 .Include(r => r.RegistrationDetails)
                 .ThenInclude(rd => rd.Ticket)
                 .ToListAsync();
+
+            if (response == null) return NotFound();
 
             _logger.LogInformation($"Get all registrations: {response}");
 
@@ -41,6 +45,8 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpGet("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Registration>> GetRegistration(int id)
         {
             var registration = await _context.Registrations
@@ -58,6 +64,9 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpGet("user/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Registration>>> GetRegistrationsByUser(int id)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -71,6 +80,8 @@ namespace EventManagementServer.Controllers
                 .Where(r => r.UserID == id)
                 .ToListAsync();
 
+            if (response == null) return NotFound();
+
             _logger.LogInformation($"Get registrations by user id: {response}");
 
             return Ok(response);
@@ -79,6 +90,9 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<Registration>> CreateRegistration([FromBody] RegistrationDto registrationDto)
         {
             if(!ModelState.IsValid) return BadRequest(ModelState);
@@ -140,6 +154,9 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpPut("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<Registration>> UpdateRegistration(int id, [FromBody] RegistrationDto registrationDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -223,11 +240,17 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpDelete("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteRegistration(int id)
         {
             var registration = await _context.Registrations
                 .Include(r => r.RegistrationDetails)
                 .FirstOrDefaultAsync(r => r.RegistrationID == id);
+
+            if(registration == null)
+                return NotFound($"Registration with ID {id} not found.");
 
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
@@ -251,8 +274,5 @@ namespace EventManagementServer.Controllers
             return Ok(deletedRegistration); // Trả về dữ liệu đã xóa
 
         }
-
-
-
     }
 }

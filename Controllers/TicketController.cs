@@ -26,6 +26,9 @@ namespace EventManagementServer.Controllers
 
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Ticket>>> GetTickets(int page = 1, int pageSize = 10, int? Quantity = null, decimal? Price = null, string? search = null)
         {
             if(page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
@@ -55,6 +58,8 @@ namespace EventManagementServer.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
+            if(tickets == null) return NotFound();
+
             var response = new
             {
                 TotalCount = totalCount,
@@ -71,6 +76,8 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Ticket>> GetTicketById(int id)
         {
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
@@ -84,6 +91,8 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("eventarea/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<EventArea>>> GetTicketByEventAreaId(int id)
         {
             var ticket = await _context.Tickets
@@ -100,6 +109,8 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<Ticket>> CreateTicket([FromBody] TicketDto ticket)
         {
             if(!ModelState.IsValid)
@@ -150,6 +161,10 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpPut("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Ticket>> UpdateCategory(int id, [FromBody] TicketDto ticket)
         {
             var existingTicket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
@@ -184,6 +199,9 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpDelete("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Ticket>> DeleteTicket(int id)
         {
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
@@ -210,6 +228,9 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpPut("active/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Ticket>> ActivateTicket(int id)
         {
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
@@ -237,6 +258,9 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpPut("unactive/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Ticket>> DeactivateTicket(int id)
         {
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);

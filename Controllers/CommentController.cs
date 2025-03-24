@@ -25,6 +25,7 @@ namespace EventManagementServer.Controllers
 
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<Comment>>> GetComments()
         {
             return Ok(await _repository.GetCommentsAsync());
@@ -32,6 +33,8 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Comment>> GetCommentById(int id)
         {
             var comment = await _repository.GetCommentByIdAsync(id);
@@ -42,6 +45,8 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("user/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Comment>> GetCommentByUserId(int id)
         {
             var comment = await _repository.GetCommentByUserIdAsync(id);
@@ -53,6 +58,8 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("event/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Comment>> GetCommentByEventId(int id)
         {
             var comment = await _repository.GetCommentByEventIdAsync(id);
@@ -65,6 +72,9 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpPost]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<Comment>> CreateComment([FromBody] CommentDto comment)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -79,6 +89,9 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpPut("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<Comment>> UpdateComment(int id, [FromBody] CommentDto comment)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -92,6 +105,8 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpDelete("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<Comment>> DeleteComment(int id)
         {
             var success = await _repository.DeleteCommentAsync(id, User);

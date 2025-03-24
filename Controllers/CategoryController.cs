@@ -25,9 +25,13 @@ namespace EventManagementServer.Controllers
 
         [HttpGet("all")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Category>>> GetAllCategories()
         {
             var results = await _categoryRepository.GetAllCategoryAsync();
+
+            if (results == null) return NotFound();
 
             _logger.LogInformation($"Get all categories: {results}");
 
@@ -37,9 +41,13 @@ namespace EventManagementServer.Controllers
         //Phương thức GetCategories trả về danh sách các Category theo trang và kích thước trang
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategories(int page = 1, int pageSize = 10, string? search = null)
         {
             var categories = await _categoryRepository.GetCategoriesAsync(page, pageSize, search);
+
+            if (categories == null) return NotFound();
 
             var totalCount = categories.Count();
             var response = new
@@ -59,9 +67,13 @@ namespace EventManagementServer.Controllers
         //Phương thức GetTopCategories trả về 4 Category mới nhất
         [HttpGet("top")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Category>>> GetTopCategories()
         {
             var respone = await _categoryRepository.GetTopCategoriesAsync();
+
+            if (respone == null) return NotFound();
 
             _logger.LogInformation($"Get top categories: {respone}");
 
@@ -71,6 +83,8 @@ namespace EventManagementServer.Controllers
         //Phương thức GetCategoryById trả về Category theo ID
         [HttpGet("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Category>> GetCategoryById(int id)
         {
             var category = await _categoryRepository.GetCategoryByIdAsync(id);
@@ -84,6 +98,8 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<Category>> CreateCategory([FromBody] CategoryDto categoryDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -105,6 +121,9 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1")]
         [HttpPut("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<Category>> UpdateCategory(int id, [FromBody] CategoryDto categoryDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -126,6 +145,8 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1")]
         [HttpDelete("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Category>> DeleteCategory(int id)
         {
             var deletedCategory = await _categoryRepository.DeleteCategoryAsync(id);

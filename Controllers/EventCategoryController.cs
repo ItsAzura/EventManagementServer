@@ -31,9 +31,13 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<EventCategory>>> GetEventCategories()
         {
             var response = await _repository.GetEventCategoriesAsync();
+
+            if (response == null) return NotFound();
 
             _logger.LogInformation($"Get all event categories: {response}");
 
@@ -43,6 +47,8 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpGet("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<EventCategory>> GetEventCategoryById(int id)
         {
             var eventCategory = await _repository.GetEventCategoryByIdAsync(id);
@@ -57,6 +63,9 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpPost]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<EventCategory>> CreateEventCategory([FromBody] EventCategoryDto eventCategory)
         { 
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -73,6 +82,9 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpPut("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<EventCategory>> UpdateEventCategory(int id, [FromBody] EventCategoryDto eventCategory)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -89,6 +101,8 @@ namespace EventManagementServer.Controllers
         [Authorize]
         [HttpDelete("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> DeleteEventCategory(int id)
         {
             var success = await _repository.DeleteEventCategoryAsync(id, User);

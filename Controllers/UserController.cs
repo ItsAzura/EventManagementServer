@@ -31,9 +31,15 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1")]
         [HttpGet]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers(int page = 1, int pageSize = 10, int? RoleId = null, string? search = null)
         {
             if(page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole != "1") return Forbid();
 
             var query = _context.Users.AsQueryable();
 
@@ -72,11 +78,19 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpGet("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<User>> GetUserById(int id)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserID == id); 
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserID == id);
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
             if (user == null) return NotFound();
+
+            if (user.UserID.ToString() != userId && userRole != "1")
+                return Forbid();
 
             _logger.LogInformation($"Get user by id: {user}");
 
@@ -86,9 +100,14 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<User>> CreateUser([FromBody] UserDto user)
         {
-            if(!ModelState.IsValid) return BadRequest(ModelState);
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole != "1") return Forbid();
+
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             // Generate a random salt
             byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
@@ -122,6 +141,9 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1,2")]
         [HttpPut("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<User>> UpdateUser(int id, [FromBody] UpdateUserDto user)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -164,16 +186,17 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1")]
         [HttpDelete("{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteUser(int id)
         {
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole != "1") return Forbid();
+
             var user = await _context.Users.FindAsync(id);
 
             if(user == null) return NotFound();
-
-            if(user.RoleID == '1')
-            {
-                return BadRequest("Cannot delete an admin user");
-            }
 
             _logger.LogInformation($"Delete user: {user}");
 
@@ -186,8 +209,13 @@ namespace EventManagementServer.Controllers
         [Authorize(Roles = "1")]
         [HttpPatch("ChangeRole/{id}")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> ChangeRole(string role, int id)
         {
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole != "1") return Forbid();
+
             var user = await _context.Users.FindAsync(id);
 
             if (user == null) return NotFound();

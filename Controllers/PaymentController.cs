@@ -28,6 +28,8 @@ namespace EventManagementServer.Controllers
 
         [HttpPost("create-checkout-session")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateCheckoutSessionAsync([FromBody] PaymentRequest request)
         {
             // ✅ Thiết lập API Key của Stripe
@@ -81,6 +83,7 @@ namespace EventManagementServer.Controllers
 
         [HttpPost("webhook")]
         [EnableRateLimiting("FixedWindowLimiter")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         //Xử lý webhook từ Stripe
         public async Task<IActionResult> HandleWebhook()
         {
