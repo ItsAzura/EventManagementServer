@@ -11,7 +11,10 @@ using System.Security.Claims;
 
 namespace EventManagementServer.Controllers
 {
-    [Route("api/[controller]")]
+    [ApiController]
+    [ApiVersion("1.0")]
+    [ControllerName("EventArea")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class EventAreaController : Controller
     {
         private readonly IEventAreaRepository _repository;

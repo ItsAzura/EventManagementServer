@@ -184,3 +184,7 @@ D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Serilog
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Serilog.Enrichers.Environment.dll
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Serilog.Enrichers.Process.dll
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Serilog.Enrichers.Thread.dll
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250322.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Microsoft.AspNetCore.Mvc.Versioning.dll
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250324.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer.dll

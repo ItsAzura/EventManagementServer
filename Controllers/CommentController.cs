@@ -10,7 +10,10 @@ using System.Security.Claims;
 
 namespace EventManagementServer.Controllers
 {
-    [Route("api/[controller]")]
+    [ApiController]
+    [ApiVersion("1.0")]
+    [ControllerName("Comment")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class CommentController : Controller
     {
         private readonly CommentRepository _repository;

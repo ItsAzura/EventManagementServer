@@ -7,7 +7,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventManagementServer.Controllers
 {
-    [Route("api/[controller]")]
+    [ApiController]
+    [ApiVersion("1.0")]
+    [ControllerName("Role")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class RoleController : Controller
     {
         private readonly EventDbContext _context;

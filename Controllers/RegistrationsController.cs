@@ -9,7 +9,9 @@ using System.Security.Claims;
 
 namespace EventManagementServer.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
+    [ApiController]
+    [ApiVersion("1.0")]
     public class RegistrationsController : Controller
     {
         private readonly EventDbContext _context;

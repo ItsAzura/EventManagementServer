@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace EventManagementServer.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [ApiVersion("1.0")]
+    [ControllerName("Auth")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class AuthController : Controller
     {
         private readonly ILogger<AuthController> _logger;

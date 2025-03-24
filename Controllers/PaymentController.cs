@@ -8,8 +8,10 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace EventManagementServer.Controllers
 {
-    [Route("api/payment")]
     [ApiController]
+    [ApiVersion("1.0")]
+    [ControllerName("Payment")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class PaymentController : ControllerBase
     {
         private readonly IConfiguration _configuration;

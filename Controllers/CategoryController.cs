@@ -8,8 +8,10 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace EventManagementServer.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [ApiVersion("1.0")]
+    [ControllerName("Category")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class CategoryController : ControllerBase
     {
         private readonly ICategoryRepository _categoryRepository;

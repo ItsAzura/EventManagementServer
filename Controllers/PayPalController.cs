@@ -2,8 +2,10 @@
 
 namespace EventManagementServer.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [ApiVersion("1.0")]
+    [ControllerName("PayPal")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class PayPalController : Controller
     {
         private readonly IConfiguration _configuration;

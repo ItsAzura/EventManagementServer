@@ -11,9 +11,10 @@ using System.Security.Claims;
 
 namespace EventManagementServer.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
-
+    [ApiVersion("1.0")]
+    [ControllerName("Feedback")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class FeedbackController : Controller
     {
         private readonly EventDbContext _context;
