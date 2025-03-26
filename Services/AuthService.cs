@@ -1,6 +1,7 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
 using EventManagementServer.Models;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -179,5 +180,41 @@ namespace EventManagementServer.Services
 
             return true;
         }
+
+        public async Task<TokenResponseDto?> GoogleLoginAsync(GoogleLoginRequest request)
+        {
+            try
+            {
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                {
+                    Audience = new[] { configuration["Google:ClientId"] } // Lấy Google Client ID từ cấu hình
+                };
+
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.TokenId, settings);
+
+                // Kiểm tra xem user đã tồn tại trong database chưa
+                var user = await context.Users.FirstOrDefaultAsync(u => u.Email == payload.Email);
+
+                if (user == null)
+                {
+                    // Tạo user mới nếu chưa tồn tại
+                    user = new User
+                    {
+                        Email = payload.Email,
+                        UserName = payload.Name,
+                        RoleID = 2 // Gán role mặc định (User)
+                    };
+                    context.Users.Add(user);
+                    await context.SaveChangesAsync();
+                }
+
+                return await CreateTokenResponse(user);
+            }
+            catch (Exception ex)
+            {
+                return null; // Trả về null nếu token không hợp lệ
+            }
+        }
+
     }
 }

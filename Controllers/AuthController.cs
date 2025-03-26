@@ -82,6 +82,15 @@ namespace EventManagementServer.Controllers
             return Ok("Logged out successfully.");
         }
 
+        [HttpPost("google-login")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+        {
+            var result = await _authService.GoogleLoginAsync(request);
+            if (result == null) return BadRequest("Invalid Google Token");
+            return Ok(result);
+        }
+
+
 
     }
 }

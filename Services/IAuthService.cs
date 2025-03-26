@@ -9,5 +9,6 @@ namespace EventManagementServer.Services
         Task<TokenResponseDto?> LoginAsync(LoginUserDto request);
         Task<TokenResponseDto?> RefreshTokensAsync(RefreshTokenRequestDto request);
         Task<bool> LogoutAsync(int userId, string refreshToken);
+        Task<TokenResponseDto?> GoogleLoginAsync(GoogleLoginRequest request);
     }
 }
