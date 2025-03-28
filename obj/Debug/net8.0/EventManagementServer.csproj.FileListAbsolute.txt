@@ -193,3 +193,8 @@ D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Google.
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Google.Apis.Core.dll
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\System.Management.dll
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\runtimes\win\lib\net7.0\System.Management.dll
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250326.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250326_001.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250326_002.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\DotNetEnv.dll
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Sprache.dll

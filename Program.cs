@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.OpenApi.Models;
 using EventManagementServer.Helpers;
+using DotNetEnv;
 ;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -168,6 +169,11 @@ builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 //Đăng ký dịch vụ EmailService
 builder.Services.AddSingleton<EmailService>();
+
+Env.Load();
+
+var googleClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
+var googleClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
 
 var app = builder.Build();
 
