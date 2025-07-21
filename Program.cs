@@ -170,6 +170,8 @@ builder.Services.AddRateLimiter(
 
 builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 //Đăng ký dịch vụ EmailService

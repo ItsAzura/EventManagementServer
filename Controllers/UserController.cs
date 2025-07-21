@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using EventManagementServer.Interface;
 
 namespace EventManagementServer.Controllers
 {
@@ -17,13 +18,13 @@ namespace EventManagementServer.Controllers
     [Route("api/v{version:apiVersion}/[controller]")]
     public class UserController : Controller
     {
-        private readonly EventDbContext _context;
+        private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<UserController> _logger;
 
-        public UserController(EventDbContext context, IConfiguration configuration, ILogger<UserController> logger)
+        public UserController(IUserRepository userRepository, IConfiguration configuration, ILogger<UserController> logger)
         {
-            _context = context;
+            _userRepository = userRepository;
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _logger = logger;
         }
@@ -34,45 +35,27 @@ namespace EventManagementServer.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers(int page = 1, int pageSize = 10, int? RoleId = null, string? search = null)
+        public async Task<ActionResult> GetUsers(int page = 1, int pageSize = 10, int? RoleId = null, string? search = null)
         {
             if(page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
-
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-            if (userRole != "1") return Forbid();
-
-            var query = _context.Users.AsQueryable();
-
-            if(RoleId.HasValue)
+            try
             {
-                query = query.Where(u => u.RoleID == RoleId.Value);
+                var (users, totalCount) = await _userRepository.GetUsersAsync(page, pageSize, RoleId, search, User);
+                var response = new
+                {
+                    TotalCount = totalCount,
+                    TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    Users = users
+                };
+                _logger.LogInformation($"Get users: {response}");
+                return Ok(response);
             }
-
-            if(!string.IsNullOrEmpty(search))
+            catch (UnauthorizedAccessException)
             {
-                query = query.Where(u => u.UserName.Contains(search));
+                return Forbid();
             }
-
-            var totalCount = await query.CountAsync();
-
-            var users = await query
-                .OrderByDescending(u => u.UserID)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var response = new
-            {
-                TotalCount = totalCount,
-                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
-                CurrentPage = page,
-                PageSize = pageSize,
-                Users = users
-            };
-
-            _logger.LogInformation($"Get users: {response}");
-
-            return Ok(response);
         }
 
         [Authorize(Roles = "1,2")]
@@ -80,21 +63,19 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<User>> GetUserById(int id)
+        public async Task<ActionResult> GetUserById(int id)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserID == id);
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            if (user == null) return NotFound();
-
-            if (user.UserID.ToString() != userId && userRole != "1")
+            try
+            {
+                var user = await _userRepository.GetUserByIdAsync(id, User);
+                if (user == null) return NotFound();
+                _logger.LogInformation($"Get user by id: {user}");
+                return Ok(user);
+            }
+            catch (UnauthorizedAccessException)
+            {
                 return Forbid();
-
-            _logger.LogInformation($"Get user by id: {user}");
-
-            return Ok(user);
+            }
         }
 
         [Authorize(Roles = "1")]
@@ -102,40 +83,19 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<User>> CreateUser([FromBody] UserDto user)
+        public async Task<ActionResult> CreateUser([FromBody] UserDto user)
         {
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-            if (userRole != "1") return Forbid();
-
             if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            // Generate a random salt
-            byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
-
-            // Hash the password with the salt
-            string hashPassword = Convert.ToBase64String(KeyDerivation.Pbkdf2(
-                password: user.PasswordHash,
-                salt: salt,
-                prf: KeyDerivationPrf.HMACSHA256,
-                iterationCount: 100000,
-                numBytesRequested: 256 / 8
-            ));
-
-            User newUser = new User
+            try
             {
-                UserName = user.UserName,
-                Email = user.Email,
-                RoleID = _configuration.GetValue<int>("User"),
-                PasswordHash = hashPassword
-            };
-
-            _logger.LogInformation($"Create new user: {newUser}");
-
-            _context.Users.Add(newUser);
-
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetUserById), new { id = newUser.UserID }, newUser);
+                var newUser = await _userRepository.CreateUserAsync(user, _configuration, User);
+                _logger.LogInformation($"Create new user: {newUser}");
+                return CreatedAtAction(nameof(GetUserById), new { id = newUser.UserID }, newUser);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
 
         [Authorize(Roles = "1,2")]
@@ -144,43 +104,20 @@ namespace EventManagementServer.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult<User>> UpdateUser(int id, [FromBody] UpdateUserDto user)
+        public async Task<ActionResult> UpdateUser(int id, [FromBody] UpdateUserDto user)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            var existingUser = await _context.Users.FindAsync(id);
-             
-            if(existingUser == null) return BadRequest();
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            if (existingUser.UserID.ToString() != userId && userRole != "1")
+            try
+            {
+                var updatedUser = await _userRepository.UpdateUserAsync(id, user, User);
+                if (updatedUser == null) return BadRequest();
+                _logger.LogInformation($"Update user: {updatedUser}");
+                return Ok();
+            }
+            catch (UnauthorizedAccessException)
+            {
                 return Forbid();
-
-            // Generate a random salt
-            byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
-
-            // Hash the password with the salt
-            string hashPassword = Convert.ToBase64String(KeyDerivation.Pbkdf2(
-                password: user.PasswordHash,
-                salt: salt,
-                prf: KeyDerivationPrf.HMACSHA256,
-                iterationCount: 100000,
-                numBytesRequested: 256/8
-            ));
-
-            existingUser.UserName = user.UserName;
-            existingUser.Email = user.Email;
-            existingUser.RoleID = user.RoleID;
-            existingUser.PasswordHash = hashPassword;
-
-            _logger.LogInformation($"Update user: {existingUser}");
-
-            _context.Entry(existingUser).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-
-            return Ok();
+            }
         }
 
         [Authorize(Roles = "1")]
@@ -191,19 +128,17 @@ namespace EventManagementServer.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteUser(int id)
         {
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-            if (userRole != "1") return Forbid();
-
-            var user = await _context.Users.FindAsync(id);
-
-            if(user == null) return NotFound();
-
-            _logger.LogInformation($"Delete user: {user}");
-
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-
-            return Ok();
+            try
+            {
+                var result = await _userRepository.DeleteUserAsync(id, User);
+                if (!result) return NotFound();
+                _logger.LogInformation($"Delete user: {id}");
+                return Ok();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
 
         [Authorize(Roles = "1")]
@@ -213,27 +148,17 @@ namespace EventManagementServer.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> ChangeRole(string role, int id)
         {
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-            if (userRole != "1") return Forbid();
-
-            var user = await _context.Users.FindAsync(id);
-
-            if (user == null) return NotFound();
-
-            user.RoleID = role switch
+            try
             {
-                "Admin" => 1,
-                "User" => 2,
-                _ => 2
-            };
-
-            _logger.LogInformation($"Change role: {user}");
-
-            _context.Entry(user).State = EntityState.Modified;
-
-            await _context.SaveChangesAsync();
-
-            return Ok();
+                var result = await _userRepository.ChangeRoleAsync(role, id, User);
+                if (!result) return NotFound();
+                _logger.LogInformation($"Change role: {id} to {role}");
+                return Ok();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
     }
 }
