@@ -137,6 +137,9 @@ builder.Services.AddScoped<IEventAreaRepository, EventAreaRepository>();
 //Đăng ký dịch vụ EventCategoryRepository
 builder.Services.AddScoped<IEventCategoryRepository, EventCategoryRepository>();
 
+//Đăng ký dịch vụ RoleRepository
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+
 //Đăng ký dịch vụ NotificationHub
 builder.Services.AddSignalR();
 
