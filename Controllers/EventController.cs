@@ -40,7 +40,7 @@ namespace EventManagementServer.Controllers
         }
 
 
-        [HttpGet("/top6")]
+        [HttpGet("top6")]
         [EnableRateLimiting("FixedWindowLimiter")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -198,3 +198,16 @@ D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\lo
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250326_002.json
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\DotNetEnv.dll
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Sprache.dll
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250329.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_001.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_002.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_003.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_004.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_005.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_006.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_007.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_008.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_009.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_010.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_011.json

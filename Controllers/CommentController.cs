@@ -1,12 +1,10 @@
 ﻿using EventManagementServer.Data;
 using EventManagementServer.Dto;
+using EventManagementServer.Interface;
 using EventManagementServer.Models;
-using EventManagementServer.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace EventManagementServer.Controllers
 {
@@ -16,9 +14,8 @@ namespace EventManagementServer.Controllers
     [Route("api/v{version:apiVersion}/[controller]")]
     public class CommentController : Controller
     {
-        private readonly CommentRepository _repository;
-
-        public CommentController(CommentRepository repository)
+        private readonly ICommentRepository _repository;
+        public CommentController(ICommentRepository repository)
         {
             _repository = repository;
         }
@@ -28,7 +25,11 @@ namespace EventManagementServer.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<Comment>>> GetComments()
         {
-            return Ok(await _repository.GetCommentsAsync());
+            var comments = await _repository.GetCommentsAsync();
+
+            if (comments == null || !comments.Any()) return NotFound();
+
+            return Ok(comments);
         }
 
         [HttpGet("{id}")]
@@ -40,7 +41,29 @@ namespace EventManagementServer.Controllers
             var comment = await _repository.GetCommentByIdAsync(id);
 
             if (comment == null) return NotFound();
-            return Ok(comment);
+
+            var result = new CommentResponseDto
+            {
+                CommentID = comment.CommentID,
+                EventID = comment.EventID,
+                UserID = comment.UserID,
+                Content = comment.Content,
+                CreateAt = comment.CreateAt,
+                Event = new SimpleEventDto
+                {
+                    EventID = comment.Event.EventID,
+                    EventName = comment.Event.EventName,
+                 
+                },
+                User = new SimpleUserDto
+                {
+                    UserID = comment.User.UserID,
+                    UserName = comment.User.UserName,
+                    Email = comment.User.Email
+                }
+            };
+
+            return Ok(result);
         }
 
         [HttpGet("user/{id}")]
@@ -53,7 +76,28 @@ namespace EventManagementServer.Controllers
 
             if (comment == null) return NotFound();
 
-            return Ok(comment);
+            var result = new CommentResponseDto
+            {
+                CommentID = comment.CommentID,
+                EventID = comment.EventID,
+                UserID = comment.UserID,
+                Content = comment.Content,
+                CreateAt = comment.CreateAt,
+                Event = new SimpleEventDto
+                {
+                    EventID = comment.Event.EventID,
+                    EventName = comment.Event.EventName,
+
+                },
+                User = new SimpleUserDto
+                {
+                    UserID = comment.User.UserID,
+                    UserName = comment.User.UserName,
+                    Email = comment.User.Email
+                }
+            };
+
+            return Ok(result);
         }
 
         [HttpGet("event/{id}")]
@@ -66,7 +110,28 @@ namespace EventManagementServer.Controllers
 
             if (comment == null) return NotFound();
 
-            return Ok(comment);
+            var result = new CommentResponseDto
+            {
+                CommentID = comment.CommentID,
+                EventID = comment.EventID,
+                UserID = comment.UserID,
+                Content = comment.Content,
+                CreateAt = comment.CreateAt,
+                Event = new SimpleEventDto
+                {
+                    EventID = comment.Event.EventID,
+                    EventName = comment.Event.EventName,
+
+                },
+                User = new SimpleUserDto
+                {
+                    UserID = comment.User.UserID,
+                    UserName = comment.User.UserName,
+                    Email = comment.User.Email
+                }
+            };
+
+            return Ok(result);
         }
 
         [Authorize]

@@ -55,24 +55,33 @@ namespace EventManagementServer.Repositories
         public async Task<Comment?> GetCommentByEventIdAsync(int id)
         {
             return await _context.Comments
+                .Include(c => c.User)
+                .Include(c => c.Event)
                 .FirstOrDefaultAsync(c => c.EventID == id);
         }
 
         public async Task<Comment?> GetCommentByIdAsync(int id)
         {
             return await _context.Comments
+                .Include(c => c.User)
+                .Include(c => c.Event)
                 .FirstOrDefaultAsync(c => c.CommentID == id);
         }
 
         public async Task<Comment?> GetCommentByUserIdAsync(int id)
         {
             return await _context.Comments
+                .Include(c => c.User)
+                .Include(c => c.Event)
                 .FirstOrDefaultAsync(c => c.UserID == id);
         }
 
         public async Task<IEnumerable<Comment>> GetCommentsAsync()
         {
-            return await _context.Comments.ToListAsync();
+            return await _context.Comments
+                .Include(c => c.User)
+                .Include(c => c.Event)
+                .ToListAsync();
         }
 
         public async Task<Comment> UpdateCommentAsync(int id, CommentDto commentDto, ClaimsPrincipal user)

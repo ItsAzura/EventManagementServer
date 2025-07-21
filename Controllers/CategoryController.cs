@@ -33,9 +33,16 @@ namespace EventManagementServer.Controllers
 
             if (results == null) return NotFound();
 
-            _logger.LogInformation($"Get all categories: {results}");
+            var output = results.Select(c => new CategoryResponseDto
+            {
+                CategoryID = c.CategoryID,
+                CategoryName = c.CategoryName,
+                CategoryDescription = c.CategoryDescription
+            });
 
-            return Ok(results);
+            _logger.LogInformation($"Get all categories: {output}");
+
+            return Ok(output);
         }
 
         //Phương thức GetCategories trả về danh sách các Category theo trang và kích thước trang
@@ -50,13 +57,20 @@ namespace EventManagementServer.Controllers
             if (categories == null) return NotFound();
 
             var totalCount = categories.Count();
+            var categoriesList = categories.Select(c => new CategoryResponseDto
+            {
+                CategoryID = c.CategoryID,
+                CategoryName = c.CategoryName,
+                CategoryDescription = c.CategoryDescription
+            }).ToList();
+
             var response = new
             {
                 TotalCount = totalCount,
                 TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
                 CurrentPage = page,
                 PageSize = pageSize,
-                Categories = categories
+                Categories = categoriesList
             };
 
             _logger.LogInformation($"Get categories: {response}");
@@ -75,9 +89,16 @@ namespace EventManagementServer.Controllers
 
             if (respone == null) return NotFound();
 
-            _logger.LogInformation($"Get top categories: {respone}");
+            var categoriesList = respone.Select(c => new CategoryResponseDto
+            {
+                CategoryID = c.CategoryID,
+                CategoryName = c.CategoryName,
+                CategoryDescription = c.CategoryDescription
+            }).ToList();
 
-            return Ok(respone);
+            _logger.LogInformation($"Get top categories: {categoriesList}");
+
+            return Ok(categoriesList);
         }
 
         //Phương thức GetCategoryById trả về Category theo ID
@@ -88,6 +109,8 @@ namespace EventManagementServer.Controllers
         public async Task<ActionResult<Category>> GetCategoryById(int id)
         {
             var category = await _categoryRepository.GetCategoryByIdAsync(id);
+
+            if (category == null) return NotFound();
 
             _logger.LogInformation($"Get category by id: {category}");
 
