@@ -4,7 +4,6 @@ using EventManagementServer.Interface;
 using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace EventManagementServer.Controllers
 {
@@ -23,7 +22,7 @@ namespace EventManagementServer.Controllers
             _roleRepository = roleRepository;
         }
 
-        // [Authorize(Roles = "1")]
+        [Authorize(Roles = "1")]
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -38,7 +37,7 @@ namespace EventManagementServer.Controllers
             return Ok(roles);
         }
 
-        // [Authorize(Roles = "1")]
+        [Authorize(Roles = "1")]
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -53,7 +52,7 @@ namespace EventManagementServer.Controllers
             return Ok(role);
         }
 
-        // [Authorize(Roles = "1")]
+        [Authorize(Roles = "1")]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -68,7 +67,7 @@ namespace EventManagementServer.Controllers
             return CreatedAtAction(nameof(GetRoleById), new { id = newRole.RoleID }, newRole);
         }
 
-        // [Authorize(Roles = "1")]
+        [Authorize(Roles = "1")]
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -86,7 +85,7 @@ namespace EventManagementServer.Controllers
             return Ok(existingRole);
         }
 
-        // [Authorize(Roles = "1")]
+        [Authorize(Roles = "1")]
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

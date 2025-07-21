@@ -1,11 +1,8 @@
-﻿using EventManagementServer.Data;
-using EventManagementServer.Dto;
-using EventManagementServer.Models;
+﻿using EventManagementServer.Dto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
+using EventManagementServer.Interface;
 
 namespace EventManagementServer.Controllers
 {
@@ -15,12 +12,12 @@ namespace EventManagementServer.Controllers
     [Route("api/v{version:apiVersion}/[controller]")]
     public class TicketController : Controller
     {
-        private readonly EventDbContext _context;
+        private readonly ITicketRepository _ticketRepository;
         private readonly ILogger<TicketController> _logger;
 
-        public TicketController(EventDbContext context, ILogger<TicketController> logger)
+        public TicketController(ITicketRepository ticketRepository, ILogger<TicketController> logger)
         {
-            _context = context;
+            _ticketRepository = ticketRepository;
             _logger = logger;
         }
 
@@ -29,37 +26,11 @@ namespace EventManagementServer.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IEnumerable<Ticket>>> GetTickets(int page = 1, int pageSize = 10, int? Quantity = null, decimal? Price = null, string? search = null)
+        public async Task<ActionResult> GetTickets(int page = 1, int pageSize = 10, int? Quantity = null, decimal? Price = null, string? search = null)
         {
             if(page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
-
-            var query = _context.Tickets.AsQueryable();
-
-            if(Quantity.HasValue)
-            {
-                query = query.Where(t => t.Quantity == Quantity.Value);
-            }
-
-            if(Price.HasValue)
-            {
-                query = query.Where(t => t.Price == Price.Value);
-            }
-
-            if(!string.IsNullOrEmpty(search))
-            {
-                query = query.Where(t => t.TicketName.Contains(search));
-            }
-
-            var totalCount = await query.CountAsync();
-
-            var tickets = await query
-                .OrderBy(t => t.TicketID)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            if(tickets == null) return NotFound();
-
+            var (tickets, totalCount) = await _ticketRepository.GetTicketsAsync(page, pageSize, Quantity, Price, search);
+            if (tickets == null) return NotFound();
             var response = new
             {
                 TotalCount = totalCount,
@@ -68,9 +39,7 @@ namespace EventManagementServer.Controllers
                 PageSize = pageSize,
                 Tickets = tickets
             };
-
             _logger.LogInformation($"Get tickets: {response}");
-
             return Ok(response);
         }
 
@@ -78,14 +47,11 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Ticket>> GetTicketById(int id)
+        public async Task<ActionResult> GetTicketById(int id)
         {
-            var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
-
+            var ticket = await _ticketRepository.GetTicketByIdAsync(id);
             if (ticket == null) return NotFound();
-
             _logger.LogInformation($"Get ticket by id: {ticket}");
-
             return Ok(ticket);
         }
 
@@ -93,17 +59,12 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IEnumerable<EventArea>>> GetTicketByEventAreaId(int id)
+        public async Task<ActionResult> GetTicketByEventAreaId(int id)
         {
-            var ticket = await _context.Tickets
-                .Where(t => t.EventAreaID == id)
-                .ToListAsync();
-
-            if (ticket == null) return NotFound();
-
-            _logger.LogInformation($"Get ticket by event area id: {ticket}");
-
-            return Ok(ticket);
+            var tickets = await _ticketRepository.GetTicketsByEventAreaIdAsync(id);
+            if (tickets == null) return NotFound();
+            _logger.LogInformation($"Get ticket by event area id: {tickets}");
+            return Ok(tickets);
         }
 
         [Authorize(Roles = "1,2")]
@@ -111,51 +72,24 @@ namespace EventManagementServer.Controllers
         [EnableRateLimiting("FixedWindowLimiter")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<Ticket>> CreateTicket([FromBody] TicketDto ticket)
+        public async Task<ActionResult> CreateTicket([FromBody] TicketDto ticket)
         {
             if(!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            var eventArea = await _context.EventAreas.FirstOrDefaultAsync(e => e.EventAreaID == ticket.EventAreaID);
-            var eventByeventArea = await _context.Events.FirstOrDefaultAsync(e => e.EventID == eventArea.EventID);
-
-            if (eventArea == null)
+            try
             {
-                ModelState.AddModelError("EventAreaID", "Event Area not found");
-                return BadRequest(ModelState);
+                var newTicket = await _ticketRepository.CreateTicketAsync(ticket, User);
+                _logger.LogInformation($"Create new ticket: {newTicket}");
+                return CreatedAtAction(nameof(GetTicketById), new { id = newTicket.TicketID }, newTicket);
             }
-
-            var totalExistingQuantity = await _context.Tickets
-                .Where(t => t.EventAreaID == ticket.EventAreaID)
-                .SumAsync(t =>(int?) t.Quantity) ?? 0;
-
-            if(ticket.Quantity > eventArea.Capacity) return BadRequest("Quantity must be less than or equal to Event Area Capacity");
-
-            if(totalExistingQuantity + ticket.Quantity > eventArea.Capacity) return BadRequest("Total quantity of tickets must be less than or equal to Event Area Capacity");
-
-            Ticket newTicket = new Ticket
+            catch (UnauthorizedAccessException)
             {
-                EventAreaID = ticket.EventAreaID,
-                TicketName = ticket.TicketName,
-                Description = ticket.Description,
-                Quantity = ticket.Quantity,
-                Price = ticket.Price,
-            };
-
-            if (newTicket == null || (eventByeventArea.CreatedBy.ToString() != userId && userRole != "1"))
                 return Forbid();
-
-            _logger.LogInformation($"Create new ticket: {newTicket}");
-
-            _context.Tickets.Add(newTicket);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetTicketById), new { id = newTicket.TicketID }, newTicket);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [Authorize(Roles = "1,2")]
@@ -165,35 +99,20 @@ namespace EventManagementServer.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Ticket>> UpdateCategory(int id, [FromBody] TicketDto ticket)
+        public async Task<ActionResult> UpdateCategory(int id, [FromBody] TicketDto ticket)
         {
-            var existingTicket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
-
-            if (existingTicket == null) return NotFound();
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            var eventArea = await _context.EventAreas.FirstOrDefaultAsync(e => e.EventAreaID == existingTicket.EventAreaID);
-            var eventByeventArea = await _context.Events.FirstOrDefaultAsync(e => e.EventID == eventArea.EventID);
-
-            if(eventByeventArea == null) return NotFound();
-
-            if (eventByeventArea?.CreatedBy.ToString() != userId && userRole != "1")
-                return Forbid();
-
             if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            existingTicket.TicketName = ticket.TicketName;
-            existingTicket.Description = ticket.Description;
-            existingTicket.Quantity = ticket.Quantity;
-            existingTicket.Price = ticket.Price;
-
-            _logger.LogInformation($"Update ticket: {existingTicket}");
-
-            await _context.SaveChangesAsync();
-
-            return Ok(existingTicket);
+            try
+            {
+                var updatedTicket = await _ticketRepository.UpdateTicketAsync(id, ticket, User);
+                if (updatedTicket == null) return NotFound();
+                _logger.LogInformation($"Update ticket: {updatedTicket}");
+                return Ok(updatedTicket);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
 
         [Authorize(Roles = "1,2")]
@@ -202,27 +121,19 @@ namespace EventManagementServer.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Ticket>> DeleteTicket(int id)
+        public async Task<ActionResult> DeleteTicket(int id)
         {
-            var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
-
-            if (ticket == null) return NotFound();
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            var eventArea = await _context.EventAreas.FirstOrDefaultAsync(e => e.EventAreaID == ticket.EventAreaID);
-            var eventByeventArea = await _context.Events.FirstOrDefaultAsync(e => e.EventID == eventArea.EventID);
-
-            if (eventByeventArea.CreatedBy.ToString() != userId && userRole != "1")
+            try
+            {
+                var result = await _ticketRepository.DeleteTicketAsync(id, User);
+                if (!result) return NotFound();
+                _logger.LogInformation($"Delete ticket: {id}");
+                return Ok();
+            }
+            catch (UnauthorizedAccessException)
+            {
                 return Forbid();
-
-            _logger.LogInformation($"Delete ticket: {ticket}");
-
-            _context.Tickets.Remove(ticket);
-            await _context.SaveChangesAsync();
-
-            return Ok(ticket);
+            }
         }
 
         [Authorize(Roles = "1,2")]
@@ -231,28 +142,19 @@ namespace EventManagementServer.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Ticket>> ActivateTicket(int id)
+        public async Task<ActionResult> ActivateTicket(int id)
         {
-            var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
-
-            if (ticket == null) return NotFound();
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            var eventArea = await _context.EventAreas.FirstOrDefaultAsync(e => e.EventAreaID == ticket.EventAreaID);
-            var eventByeventArea = await _context.Events.FirstOrDefaultAsync(e => e.EventID == eventArea.EventID);
-
-            if (eventByeventArea.CreatedBy.ToString() != userId && userRole != "1")
+            try
+            {
+                var ticket = await _ticketRepository.ActivateTicketAsync(id, User);
+                if (ticket == null) return NotFound();
+                _logger.LogInformation($"Activate ticket: {ticket}");
+                return Ok(ticket);
+            }
+            catch (UnauthorizedAccessException)
+            {
                 return Forbid();
-
-            ticket.Status = "Available";
-
-            _logger.LogInformation($"Activate ticket: {ticket}");
-
-            await _context.SaveChangesAsync();
-
-            return Ok(ticket);
+            }
         }
 
         [Authorize(Roles = "1,2")]
@@ -261,28 +163,19 @@ namespace EventManagementServer.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Ticket>> DeactivateTicket(int id)
+        public async Task<ActionResult> DeactivateTicket(int id)
         {
-            var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.TicketID == id);
-
-            if (ticket == null) return NotFound();
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            var eventArea = await _context.EventAreas.FirstOrDefaultAsync(e => e.EventAreaID == ticket.EventAreaID);
-            var eventByeventArea = await _context.Events.FirstOrDefaultAsync(e => e.EventID == eventArea.EventID);
-
-            if (eventByeventArea.CreatedBy.ToString() != userId && userRole != "1")
+            try
+            {
+                var ticket = await _ticketRepository.DeactivateTicketAsync(id, User);
+                if (ticket == null) return NotFound();
+                _logger.LogInformation($"Deactivate ticket: {ticket}");
+                return Ok(ticket);
+            }
+            catch (UnauthorizedAccessException)
+            {
                 return Forbid();
-
-            ticket.Status = "Unavailable";
-
-            _logger.LogInformation($"Deactivate ticket: {ticket}");
-
-            await _context.SaveChangesAsync();
-
-            return Ok(ticket);
+            }
         }
     }
 }
