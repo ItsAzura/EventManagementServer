@@ -177,6 +177,12 @@ builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 //Đăng ký dịch vụ EmailService
 builder.Services.AddSingleton<EmailService>();
 
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = "localhost:6379"; // Địa chỉ Redis, mặc định là localhost:6379
+    options.InstanceName = "EventManagement_"; // Tùy chọn, để phân biệt key cache
+});
+
 Env.Load();
 
 var googleClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");

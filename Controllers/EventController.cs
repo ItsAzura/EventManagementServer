@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using System.Security.Claims;
 
 namespace EventManagementServer.Controllers
@@ -17,11 +18,13 @@ namespace EventManagementServer.Controllers
     [Route("api/v{version:apiVersion}/[controller]")]
     public class EventController : Controller
     {
+        private readonly IDistributedCache _cache;
         private readonly EventDbContext _context;
         private readonly ILogger<EventController> _logger;
 
-        public EventController(EventDbContext context, ILogger<EventController> logger)
+        public EventController(IDistributedCache cache, EventDbContext context, ILogger<EventController> logger)
         {
+            _cache = cache;
             _context = context;
             _logger = logger;
         }
@@ -67,11 +70,24 @@ namespace EventManagementServer.Controllers
         {
             if (page < 1 || pageSize < 1) return BadRequest("Invalid page or pageSize");
 
+            // Chỉ cache khi không lọc category và không search, và lấy trang đầu tiên
+            bool canCache = !categoryId.HasValue && string.IsNullOrEmpty(search) && page == 1 && pageSize == 10;
+            string cacheKey = "events_all";
+            if (canCache)
+            {
+                string cachedEvents = await _cache.GetStringAsync(cacheKey);
+                if (!string.IsNullOrEmpty(cachedEvents))
+                {
+                    var response = System.Text.Json.JsonSerializer.Deserialize<object>(cachedEvents);
+                    _logger.LogInformation("Get events from cache");
+                    return Ok(response);
+                }
+            }
+
             var query = _context.Events
-                .Where(e => e.EventStatus == "Approved") // Lọc theo trạng thái trước
+                .Where(e => e.EventStatus == "Approved")
                 .AsQueryable();
 
-            // Lọc theo Category nếu có
             if (categoryId.HasValue)
             {
                 query = from e in query
@@ -80,23 +96,21 @@ namespace EventManagementServer.Controllers
                         select e;
             }
 
-            // Tìm theo title nếu có
             if (!string.IsNullOrEmpty(search))
             {
                 query = query.Where(e => e.EventName.Contains(search));
             }
 
-            var totalCount = await query.CountAsync(); // Đếm số lượng event sau khi lọc
-
+            var totalCount = await query.CountAsync();
             var events = await query
-                .OrderBy(e => e.EventID)  // Sắp xếp theo ID
+                .OrderBy(e => e.EventID)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
             if (events == null) return NotFound();
 
-            var response = new
+            var responseDb = new
             {
                 TotalCount = totalCount,
                 TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
@@ -105,9 +119,15 @@ namespace EventManagementServer.Controllers
                 Events = events
             };
 
-            _logger.LogInformation("Get events: {@response}", response);
+            if (canCache)
+            {
+                var options = new DistributedCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(30));
+                await _cache.SetStringAsync(cacheKey, System.Text.Json.JsonSerializer.Serialize(responseDb), options);
+                _logger.LogInformation("Get events from database and set cache");
+            }
 
-            return Ok(response);
+            return Ok(responseDb);
         }
 
 
@@ -307,6 +327,9 @@ namespace EventManagementServer.Controllers
                 _context.Notifications.Add(notification);
             }
             await _context.SaveChangesAsync();
+
+            // Xóa cache sau khi thêm event
+            await _cache.RemoveAsync("events_all");
 
             if (admin != null) {
                 await hubContext.Clients.User(admin.UserID.ToString()).SendAsync("ReceiveNotification", new
@@ -543,6 +566,9 @@ namespace EventManagementServer.Controllers
             _context.Notifications.AddRange(notifications);
             await _context.SaveChangesAsync();
 
+            // Xóa cache sau khi cập nhật event
+            await _cache.RemoveAsync("events_all");
+
             await hubContext.Clients.All.SendAsync(
                 "ReceiveNotification",
                 new {
@@ -573,7 +599,7 @@ namespace EventManagementServer.Controllers
 
             if (existingEvent.CreatedBy.ToString() != userId && userRole != "1")
                 return Forbid();
-
+             
             string imagePath = "Images/" + existingEvent.EventImage;
             if(System.IO.File.Exists(imagePath))
             {
@@ -583,7 +609,11 @@ namespace EventManagementServer.Controllers
             _logger.LogInformation("Delete event: {@event}", existingEvent);
 
             _context.Events.Remove(existingEvent);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
+
+            // Xóa cache sau khi xóa event
+            await _cache.RemoveAsync("events_all");
+
             return Ok();
         }
 

@@ -5,6 +5,7 @@ using EventManagementServer.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace EventManagementServer.Controllers
 {
@@ -14,11 +15,13 @@ namespace EventManagementServer.Controllers
     [Route("api/v{version:apiVersion}/[controller]")]
     public class CategoryController : ControllerBase
     {
+        private readonly IDistributedCache _cache;
         private readonly ICategoryRepository _categoryRepository;
         private readonly ILogger<CategoryController> _logger;
 
-        public CategoryController(ICategoryRepository categoryRepository, ILogger<CategoryController> logger)
+        public CategoryController(IDistributedCache cache, ICategoryRepository categoryRepository, ILogger<CategoryController> logger)
         {
+            _cache = cache;
             _categoryRepository = categoryRepository;
             _logger = logger;
         }
@@ -29,20 +32,33 @@ namespace EventManagementServer.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Category>>> GetAllCategories()
         {
-            var results = await _categoryRepository.GetAllCategoryAsync();
+            string cacheKey = "categories_all";
+            string cachedCategories = await _cache.GetStringAsync(cacheKey);
 
+            if (!string.IsNullOrEmpty(cachedCategories))
+            {
+                var output = System.Text.Json.JsonSerializer.Deserialize<List<CategoryResponseDto>>(cachedCategories);
+                _logger.LogInformation("Get all categories from cache");
+                return Ok(output);
+            }
+
+            var results = await _categoryRepository.GetAllCategoryAsync();
             if (results == null) return NotFound();
 
-            var output = results.Select(c => new CategoryResponseDto
+            var outputDb = results.Select(c => new CategoryResponseDto
             {
                 CategoryID = c.CategoryID,
                 CategoryName = c.CategoryName,
                 CategoryDescription = c.CategoryDescription
-            });
+            }).ToList();
 
-            _logger.LogInformation($"Get all categories: {output}");
+            // Lưu vào cache 30 phút
+            var options = new DistributedCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromMinutes(30));
+            await _cache.SetStringAsync(cacheKey, System.Text.Json.JsonSerializer.Serialize(outputDb), options);
 
-            return Ok(output);
+            _logger.LogInformation("Get all categories from database and set cache");
+            return Ok(outputDb);
         }
 
         //Phương thức GetCategories trả về danh sách các Category theo trang và kích thước trang
@@ -52,6 +68,16 @@ namespace EventManagementServer.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategories(int page = 1, int pageSize = 10, string? search = null)
         {
+            string cacheKey = "categories_all";
+            string cachedCategories = await _cache.GetStringAsync(cacheKey);
+
+            if (!string.IsNullOrEmpty(cachedCategories))
+            {
+                var output = System.Text.Json.JsonSerializer.Deserialize<List<CategoryResponseDto>>(cachedCategories);
+                _logger.LogInformation("Get all categories from cache");
+                return Ok(output);
+            }
+
             var categories = await _categoryRepository.GetCategoriesAsync(page, pageSize, search);
 
             if (categories == null) return NotFound();
@@ -73,8 +99,11 @@ namespace EventManagementServer.Controllers
                 Categories = categoriesList
             };
 
-            _logger.LogInformation($"Get categories: {response}");
+            var options = new DistributedCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromMinutes(30));
+                await _cache.SetStringAsync(cacheKey, System.Text.Json.JsonSerializer.Serialize(response), options);
 
+            _logger.LogInformation("Get categories from database and set cache");
             return Ok(response);
         }
 
@@ -137,6 +166,8 @@ namespace EventManagementServer.Controllers
 
             _logger.LogInformation($"Create category: {createdCategory}");
 
+            await _cache.RemoveAsync("categories_all");
+
             return CreatedAtAction(nameof(GetCategoryById), new { id = createdCategory.CategoryID }, createdCategory);
         }
 
@@ -161,6 +192,8 @@ namespace EventManagementServer.Controllers
 
             _logger.LogInformation($"Update category: {updatedCategory}");
 
+            await _cache.RemoveAsync("categories_all");
+
             return updatedCategory == null ? NotFound() : Ok(updatedCategory);
         }
 
@@ -175,6 +208,8 @@ namespace EventManagementServer.Controllers
             var deletedCategory = await _categoryRepository.DeleteCategoryAsync(id);
 
             _logger.LogInformation($"Delete category: {deletedCategory}");
+
+            await _cache.RemoveAsync("categories_all");
 
             return deletedCategory == null ? NotFound() : Ok(deletedCategory);
         }

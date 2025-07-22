@@ -213,3 +213,9 @@ D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\lo
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_011.json
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_012.json
 D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_013.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250721_014.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Microsoft.Extensions.Caching.StackExchangeRedis.dll
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Pipelines.Sockets.Unofficial.dll
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\StackExchange.Redis.dll
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250722.json
+D:\Learn C#\EventManagementServer\EventManagementServer\bin\Debug\net8.0\Logs\log20250722_001.json
